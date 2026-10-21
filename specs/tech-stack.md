@@ -1,6 +1,6 @@
 # Tech Stack
 
-> **Estado:** Fase 0 (Constitución y Planificación Inicial)
+> **Estado:** Fase 1 completada (001-core-semantic-engine implementado y validado)
 
 ## 1. Restricciones de plataforma que definen la arquitectura
 

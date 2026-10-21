@@ -163,7 +163,7 @@ La construcción técnica se ejecutará en 5 bloques progresivos sin dependencia
 
 ### Suposiciones:
 1. **Entorno Docker local (Confirmado):** Se cuenta con Docker Engine en el entorno local para ejecutar el contenedor local de PostgreSQL 17 especificado en `docker-compose.yml`.
-2. **Respuesta de Feature Extraction (Abierta / Por validar en integración):** Se asume que el modelo `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` servido por la API de Hugging Face retorna representaciones vectoriales densas de 384 dimensiones. Esta suposición permanece formalmente abierta y pendiente de verificación empírica hasta ejecutar las pruebas de integración con la API real durante la implementación.
+2. **Respuesta de Feature Extraction (Verificada empíricamente con éxito):** Se confirmó que el modelo `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` servido por la API de Hugging Face Inference Providers retorna efectivamente representaciones vectoriales densas de exactamente 384 dimensiones numéricas con latencias de 185 a 400 ms, validadas en caliente mediante el script `backend/src/scripts/testHuggingFace.ts`.
 3. **Capacidad y dimensionamiento del cálculo en memoria vs. `pgvector`:**
    El cálculo lineal de similitud coseno en memoria backend ($O(N)$) está dimensionado para operar bajo las siguientes métricas de capacidad:
    - **1 a 1,000 frases:** ~3 MB de datos vectoriales en memoria, cómputo completado en **< 2 ms**.

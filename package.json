@@ -1,0 +1,17 @@
+{
+  "name": "semantic-phrase-validator",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "test": "npm --prefix backend run test",
+    "test:unit": "npm --prefix backend run test:unit",
+    "test:integration": "npm --prefix backend run test:integration",
+    "test:all": "npm --prefix backend run test:all",
+    "build": "npm --prefix backend run build",
+    "validate:sdd": "python scripts/validate_sdd.py",
+    "check:constitution": "python scripts/check_constitution.py"
+  }
+}

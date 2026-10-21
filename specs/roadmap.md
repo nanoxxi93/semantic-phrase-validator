@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 0 completada (Constitución y Arquitectura Inicial)
+> **Estado actual:** Fase 1 completada (001-core-semantic-engine)
 
 ---
 
@@ -15,15 +15,15 @@ Establecimiento de las bases metodológicas, arquitectura técnica y gobernanza 
 
 ---
 
-## Fase 1: `001-core-semantic-engine` (Motor Semántico y Persistencia Base)
+## Fase 1: `001-core-semantic-engine` (Motor Semántico y Persistencia Base - Completada)
 Construcción del núcleo matemático, la capa de persistencia en PostgreSQL con Drizzle ORM y la integración de embeddings con Hugging Face.
-- [ ] Configuración del entorno de base de datos PostgreSQL local con Docker Compose.
-- [ ] Definición del esquema Drizzle ORM para la tabla `phrases` (`id`, `text`, `embedding` en `JSONB`, `similarity_score`, `similar_to_id`, `validation_status`, `created_at`).
-- [ ] Generación y ejecución de migraciones iniciales con `drizzle-kit`.
-- [ ] Implementación de la utilidad pura de cálculo de similitud coseno (`calculateCosineSimilarity`) en `utils/`.
-- [ ] Definición de la interfaz abstracta `EmbeddingProvider`.
-- [ ] Implementación del proveedor concreto `HuggingFaceEmbeddingProvider` utilizando `@huggingface/inference` y el modelo `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`.
-- [ ] Pruebas unitarias completas con Vitest para el cálculo de similitud coseno (casos límite: ortogonalidad, coincidencia idéntica, vectores nulos) y mock determinista del proveedor.
+- [x] Configuración del entorno de base de datos PostgreSQL local con Docker Compose.
+- [x] Definición del esquema Drizzle ORM para la tabla `phrases` (`id`, `text`, `embedding` en `JSONB`, `similarity_score`, `similar_to_id`, `validation_status`, `created_at`).
+- [x] Generación y ejecución de migraciones iniciales con `drizzle-kit`.
+- [x] Implementación de la utilidad pura de cálculo de similitud coseno (`calculateCosineSimilarity`) en `utils/`.
+- [x] Definición de la interfaz abstracta `EmbeddingProvider`.
+- [x] Implementación del proveedor concreto `HuggingFaceEmbeddingProvider` utilizando `@huggingface/inference` y el modelo `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`.
+- [x] Pruebas unitarias completas con Vitest para el cálculo de similitud coseno (casos límite: ortogonalidad, coincidencia idéntica, vectores nulos) y mock determinista del proveedor.
 
 ---
 
@@ -70,7 +70,10 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- [001-core-semantic-engine](2026-10-20-001-core-semantic-engine/) — Motor semántico de cálculo de similitud coseno, abstracción de embeddings con Hugging Face y persistencia base en PostgreSQL.
+- *Ninguna en curso actualmente. Próxima: `002-phrase-validation-api`.*
+
+### Completadas
+- [001-core-semantic-engine](2026-10-20-001-core-semantic-engine/) — Motor semántico de cálculo de similitud coseno, abstracción de embeddings con Hugging Face y persistencia base en PostgreSQL (Fase 1).
 
 ### En main, sin versión todavía
 - Gobernanza fundacional (`specs/mission.md`, `specs/tech-stack.md`, `specs/constitution.md`, `specs/constitution.rules.json`, `specs/roadmap.md`).
