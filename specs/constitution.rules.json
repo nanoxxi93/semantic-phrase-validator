@@ -1,0 +1,17 @@
+{
+  "target_directories": ["src", "api", "app", "lib"],
+  "rules": [
+    {
+      "name": "No quemar secretos o tokens",
+      "pattern": "(?i)(password|secret|api_key|token)\\s*=\\s*['\"][^'\"]{8,}['\"]",
+      "extensions": [".js", ".ts", ".py", ".cs", ".json", ".vue"],
+      "message": "Infracción de la Constitución: Posible secreto hardcodeado detectado. Usa variables de entorno."
+    },
+    {
+      "name": "No dejar logs de consola en producción",
+      "pattern": "console\\.log\\(",
+      "extensions": [".js", ".ts", ".jsx", ".tsx", ".vue"],
+      "message": "Infracción de la Constitución: console.log() detectado. Usa un logger estructurado o elimínalo antes de commit."
+    }
+  ]
+}

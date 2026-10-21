@@ -1,0 +1,10 @@
+# Reglas Locales IA
+.ai-context.md
+
+# Python
+__pycache__/
+*.py[cod]
+
+# SO
+.DS_Store
+Thumbs.db
