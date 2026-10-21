@@ -1,6 +1,6 @@
 # Especificaciones (Spec-Driven Development)
 
-{{PROJECT_NAME}} sigue la metodología **Spec-Driven Development (SDD)**. Antes de escribir una sola línea de código, cada funcionalidad se diseña, se valida, se desglosa y se audita de forma rigurosa.
+Semantic Phrase Validator sigue la metodología **Spec-Driven Development (SDD)**. Antes de escribir una sola línea de código, cada funcionalidad se diseña, se valida, se desglosa y se audita de forma rigurosa.
 
 Este directorio (`specs/`) contiene tanto los documentos fundacionales del proyecto como las carpetas individuales de cada funcionalidad a implementar.
 
@@ -8,7 +8,7 @@ Este directorio (`specs/`) contiene tanto los documentos fundacionales del proye
 
 Estos archivos mandan sobre todo el código y deben ser consultados continuamente por las skills:
 
-- [`mission.md`](mission.md) — Qué es {{PROJECT_NAME}}, para quién está diseñado y sus principios de experiencia de usuario.
+- [`mission.md`](mission.md) — Qué es Semantic Phrase Validator, para quién está diseñado y sus principios de experiencia de usuario.
 - [`tech-stack.md`](tech-stack.md) — La pila tecnológica, patrones aprobados y arquitectura.
 - [`roadmap.md`](roadmap.md) — El historial de versiones, lo que está en curso y lo que vendrá.
 - [`intentos-fallidos.md`](intentos-fallidos.md) — Registro de enfoques y herramientas que fallaron y no deben repetirse.
@@ -42,5 +42,3 @@ A medida que las funcionalidades evolucionan o sus requisitos cambian durante el
 En su lugar, mantén una sección `## Changelog de la Especificación` al final de tu **`spec.md`** (o `requirements.md`). Cada vez que un requerimiento muta, el equipo o la IA debe agregar la fecha y el motivo allí. Esto preserva el contexto histórico de la característica sin contaminar el registro global del proyecto.
 
 *(Nota: Los arreglos menores aislados no requieren crear toda una carpeta de spec, pueden ser ejecutados y cerrados directamente).*
-
-

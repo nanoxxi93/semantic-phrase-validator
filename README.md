@@ -1,6 +1,6 @@
-# {{PROJECT_NAME}}
+# Semantic Phrase Validator
 
-{{PROJECT_SHORT_DESCRIPTION}}
+Aplicación web Fullstack AI tipo lista de oraciones cortas con detección inteligente de duplicados semánticos antes de persistir, utilizando embeddings generados por Hugging Face y cálculo de similitud coseno frente a un umbral configurable.
 
 **Specs primero (SDD):** El proyecto usa **Spec-Driven Development**. Toda funcionalidad nueva nace en [`specs/`](./specs) con sus requerimientos, plan técnico, y desglose de tareas, pasando por un ciclo de auditoría antes de tocar código. La misión, constitución, pila técnica y hoja de ruta viven allí.
 El ciclo completo se ejecuta usando las skills ubicadas en [`.claude/skills/`](./.claude/skills) en este orden estricto: `specify` → `clarify` → `plan` → `tasks` → `checklist` → `analyze` → `implement` → `close` → `publish`. Para entender el detalle del proceso, **lee siempre [`specs/README.md`](./specs/README.md) primero**.

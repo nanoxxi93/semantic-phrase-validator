@@ -43,7 +43,7 @@ git push origin main
 ## 6. Etiquetar (Git Tag)
 Saca la suma (`sha256sum`) del binario/artefacto y etiqueta en `main`:
 ```bash
-git tag -a v<X.Y.Z> -m "{{PROJECT_NAME}} <X.Y.Z>" -m "El binario/artefacto publicado se compiló de este árbol."
+git tag -a v<X.Y.Z> -m "Semantic Phrase Validator <X.Y.Z>" -m "El binario/artefacto publicado se compiló de este árbol."
 git push origin v<X.Y.Z>
 ```
 
@@ -54,6 +54,6 @@ git push origin v<X.Y.Z>
   - `## Instalar`: (Menciona instrucciones y advertencias necesarias).
 - Ejecuta el release (si `gh` cli está disponible):
   ```bash
-  gh release create v<X.Y.Z> <ruta-al-binario/artefacto> --target main --title "{{PROJECT_NAME}} <X.Y.Z>" --notes-file <scratchpad>/notas.md
+  gh release create v<X.Y.Z> <ruta-al-binario/artefacto> --target main --title "Semantic Phrase Validator <X.Y.Z>" --notes-file <scratchpad>/notas.md
   ```
 

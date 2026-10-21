@@ -1,10 +1,24 @@
 # Reglas Locales IA
 .ai-context.md
 
+# Variables de entorno y secretos (CRÍTICO)
+.env
+.env.*
+!.env.example
+
+# Node.js / Monorepo / Vite / Vitest
+node_modules/
+dist/
+coverage/
+*.log
+.vite/
+
 # Python
 __pycache__/
 *.py[cod]
 
-# SO
+# SO / Editores
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/

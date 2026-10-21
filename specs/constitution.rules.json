@@ -1,17 +1,17 @@
 {
-  "target_directories": ["src", "api", "app", "lib"],
+  "target_directories": ["backend", "frontend", "src", "api", "app"],
   "rules": [
     {
       "name": "No quemar secretos o tokens",
-      "pattern": "(?i)(password|secret|api_key|token)\\s*=\\s*['\"][^'\"]{8,}['\"]",
-      "extensions": [".js", ".ts", ".py", ".cs", ".json", ".vue"],
-      "message": "Infracción de la Constitución: Posible secreto hardcodeado detectado. Usa variables de entorno."
+      "pattern": "(?i)(password|secret|api_key|token|hf_token)\\s*=\\s*['\"][^'\"]{8,}['\"]",
+      "extensions": [".js", ".ts", ".py", ".json", ".vue"],
+      "message": "Infracción de la Constitución: Posible secreto o token de API hardcodeado detectado. Usa variables de entorno (.env)."
     },
     {
       "name": "No dejar logs de consola en producción",
       "pattern": "console\\.log\\(",
-      "extensions": [".js", ".ts", ".jsx", ".tsx", ".vue"],
-      "message": "Infracción de la Constitución: console.log() detectado. Usa un logger estructurado o elimínalo antes de commit."
+      "extensions": [".js", ".ts", ".vue"],
+      "message": "Infracción de la Constitución: console.log() detectado en código fuente. Utiliza un logger estructurado o remuévelo antes de desplegar."
     }
   ]
 }
