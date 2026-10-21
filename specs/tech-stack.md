@@ -109,7 +109,7 @@ El proyecto se organiza como un monorepo cohesionado que aloja `/backend` y `/fr
 | **Backend Framework** | Express.js + TypeScript | Framework minimalista, flexible y ampliamente probado para APIs REST livianas. |
 | **Validación de Esquemas** | Zod | Inferencia estática de tipos en TypeScript y validación estricta de payloads en runtime. |
 | **ORM & Migraciones** | Drizzle ORM (`drizzle-orm`, `drizzle-kit`, `pg`) | Tipado SQL-like directo, migraciones predecibles en SQL puro y cero sobrecarga de instanciación. |
-| **Base de Datos** | PostgreSQL 16 | Motor relacional estándar con soporte nativo de tipos `JSONB`, transacciones ACID y alta confiabilidad. |
+| **Base de Datos** | PostgreSQL 17 | Motor relacional estándar con soporte nativo de tipos `JSONB`, transacciones ACID y alta confiabilidad (alineado con la versión LTS soportada por Supabase y la compatibilidad de Neon). |
 | **Modelo de Embeddings** | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | Modelo de 384 dimensiones de Hugging Face optimizado para detectar paráfrasis en más de 50 idiomas con baja latencia. |
 | **Cliente de Inferencia** | `@huggingface/inference` | SDK oficial para comunicarse con la API de inferencia de Hugging Face. |
 | **Frontend Framework** | Vue 3 (Composition API, `<script setup>`) | Reactividad atómica, excelente separación de lógica en composables y curva de desarrollo ágil. |
@@ -172,5 +172,5 @@ semantic-phrase-validator/
 |---|---|---|
 | **Cold start o latencia de la API de Hugging Face** | Medio | Manejo explícito de timeouts en cliente HTTP; retorno de error `503 Service Unavailable` estructurado con mensaje amigable; diseño de interfaz con spinners reactivos que informan el estado de la inferencia. |
 | **Agotamiento de cuota de Hugging Face en pruebas** | Alto | Inversión de dependencias mediante interfaz `EmbeddingProvider` y fixture mock determinista en todas las suites de tests automatizados. |
-| **Cálculo de similitud coseno con catálogos grandes** | Bajo a Medio | Para el alcance del MVP (cientos a miles de frases), el cálculo lineal O(N) en memoria backend toma menos de 10ms. A futuro, migración transparente a la extensión `pgvector` de PostgreSQL gracias al desacoplamiento en `PhraseRepository`. |
+| **Cálculo de similitud coseno con catálogos grandes** | Bajo a Medio | Para el alcance del MVP, el cálculo lineal O(N) en memoria backend soporta eficientemente hasta 10,000 frases (< 30ms). A partir de 10,000 frases se establece formalmente el punto de inflexión para migrar a `pgvector` en PostgreSQL con índices HNSW. |
 | **Inconsistencias de contratos entre Frontend y Backend** | Medio | Definición de esquemas Zod compartidos o sincronizados; tests de integración que validan los payloads de petición y respuesta. |
