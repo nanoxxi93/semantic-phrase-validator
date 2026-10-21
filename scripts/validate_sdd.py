@@ -2,6 +2,13 @@ import os
 import sys
 import re
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 FEATURE_FOLDER_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9-]+$")
 
 REQUIRED_SECTIONS = {
