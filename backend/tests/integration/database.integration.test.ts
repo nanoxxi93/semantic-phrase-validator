@@ -3,27 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, pool } from '../../src/db/index.js';
 import { phrases } from '../../src/db/schema.js';
 import { env } from '../../src/config/env.js';
-
-/**
- * Asserts that the target environment is safe for running integration tests.
- * Standard industry practice: blocks tests if NODE_ENV is set to 'production'
- * or if the connection string explicitly targets a production database name.
- */
-export function assertSafeTestDatabase(databaseUrl: string, nodeEnv: string): void {
-  if (nodeEnv === 'production') {
-    throw new Error(
-      'CRITICAL SAFETY CHECK: Running destructive integration tests in a PRODUCTION environment (NODE_ENV=production) is strictly forbidden.'
-    );
-  }
-
-  // Guard against accidental connection to databases explicitly named 'production' or 'prod'
-  const urlPath = databaseUrl.split('/').pop()?.split('?')[0]?.toLowerCase() || '';
-  if (urlPath === 'production' || urlPath === 'prod' || urlPath.startsWith('production_') || urlPath.startsWith('prod_')) {
-    throw new Error(
-      `CRITICAL SAFETY CHECK: DATABASE_URL targets a database named "${urlPath}". Running tests on databases with production names is forbidden.`
-    );
-  }
-}
+import { assertSafeTestDatabase } from '../helpers/assertSafeTestDatabase.js';
 
 describe('Database Integration Tests (PostgreSQL 17)', () => {
   beforeAll(() => {
@@ -70,7 +50,7 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
     });
   });
 
-  it('CE-7: should persist the first phrase with similar_to_id = null, similarity_score = null, and validation_status = UNIQUE in an empty catalog', async () => {
+  it('CE-7: should persist the first phrase with similarToId = null, similarityScore = null, and validationStatus = UNIQUE in an empty catalog', async () => {
     const dummyEmbedding = new Array(384).fill(0.01);
 
     const [inserted] = await db
@@ -78,9 +58,9 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
       .values({
         text: 'Primera frase en catálogo vacío',
         embedding: dummyEmbedding,
-        similarity_score: null,
-        similar_to_id: null,
-        validation_status: 'UNIQUE',
+        similarityScore: null,
+        similarToId: null,
+        validationStatus: 'UNIQUE',
       })
       .returning();
 
@@ -88,13 +68,13 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
     expect(inserted.id).toBeDefined();
     expect(inserted.text).toBe('Primera frase en catálogo vacío');
     expect(inserted.embedding).toHaveLength(384);
-    expect(inserted.similarity_score).toBeNull();
-    expect(inserted.similar_to_id).toBeNull();
-    expect(inserted.validation_status).toBe('UNIQUE');
-    expect(inserted.created_at).toBeInstanceOf(Date);
+    expect(inserted.similarityScore).toBeNull();
+    expect(inserted.similarToId).toBeNull();
+    expect(inserted.validationStatus).toBe('UNIQUE');
+    expect(inserted.createdAt).toBeInstanceOf(Date);
   });
 
-  it('CA-04: should persist and accurately retrieve phrase with metadata and numeric similarity_score', async () => {
+  it('CA-04: should persist and accurately retrieve phrase with metadata and numeric similarityScore', async () => {
     const dummyEmbedding = new Array(384).fill(0.02);
 
     const [original] = await db
@@ -102,9 +82,9 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
       .values({
         text: 'Frase original registrada',
         embedding: dummyEmbedding,
-        similarity_score: null,
-        similar_to_id: null,
-        validation_status: 'UNIQUE',
+        similarityScore: null,
+        similarToId: null,
+        validationStatus: 'UNIQUE',
       })
       .returning();
 
@@ -113,9 +93,9 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
       .values({
         text: 'Frase duplicada confirmada',
         embedding: dummyEmbedding,
-        similarity_score: '0.8542',
-        similar_to_id: original.id,
-        validation_status: 'CONFIRMED_DUPLICATE',
+        similarityScore: '0.8542',
+        similarToId: original.id,
+        validationStatus: 'CONFIRMED_DUPLICATE',
       })
       .returning();
 
@@ -124,12 +104,12 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
     expect(found).toBeDefined();
     expect(found.text).toBe('Frase duplicada confirmada');
     expect(found.embedding).toHaveLength(384);
-    expect(found.similarity_score).toBe('0.8542');
-    expect(found.similar_to_id).toBe(original.id);
-    expect(found.validation_status).toBe('CONFIRMED_DUPLICATE');
+    expect(found.similarityScore).toBe('0.8542');
+    expect(found.similarToId).toBe(original.id);
+    expect(found.validationStatus).toBe('CONFIRMED_DUPLICATE');
   });
 
-  it('CA-06: should set similar_to_id to NULL (ON DELETE SET NULL) when the referenced phrase is deleted', async () => {
+  it('CA-06: should set similarToId to NULL (ON DELETE SET NULL) when the referenced phrase is deleted', async () => {
     const dummyEmbedding = new Array(384).fill(0.03);
 
     const [phraseA] = await db
@@ -137,9 +117,9 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
       .values({
         text: 'Frase A a eliminar',
         embedding: dummyEmbedding,
-        similarity_score: null,
-        similar_to_id: null,
-        validation_status: 'UNIQUE',
+        similarityScore: null,
+        similarToId: null,
+        validationStatus: 'UNIQUE',
       })
       .returning();
 
@@ -148,24 +128,24 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
       .values({
         text: 'Frase B que referencia a Frase A',
         embedding: dummyEmbedding,
-        similarity_score: '0.9123',
-        similar_to_id: phraseA.id,
-        validation_status: 'CONFIRMED_DUPLICATE',
+        similarityScore: '0.9123',
+        similarToId: phraseA.id,
+        validationStatus: 'CONFIRMED_DUPLICATE',
       })
       .returning();
 
-    expect(phraseB.similar_to_id).toBe(phraseA.id);
+    expect(phraseB.similarToId).toBe(phraseA.id);
 
     await db.delete(phrases).where(eq(phrases.id, phraseA.id));
 
     const [updatedPhraseB] = await db.select().from(phrases).where(eq(phrases.id, phraseB.id));
 
     expect(updatedPhraseB).toBeDefined();
-    expect(updatedPhraseB.similar_to_id).toBeNull();
+    expect(updatedPhraseB.similarToId).toBeNull();
     expect(updatedPhraseB.text).toBe('Frase B que referencia a Frase A');
   });
 
-  it('CE-6: should reject insertion when similar_to_id references a non-existent UUID', async () => {
+  it('CE-6: should reject insertion when similarToId references a non-existent UUID', async () => {
     const nonExistentUuid = '00000000-0000-0000-0000-000000000000';
     const dummyEmbedding = new Array(384).fill(0.04);
 
@@ -173,9 +153,9 @@ describe('Database Integration Tests (PostgreSQL 17)', () => {
       db.insert(phrases).values({
         text: 'Frase con FK inválida',
         embedding: dummyEmbedding,
-        similarity_score: '0.5000',
-        similar_to_id: nonExistentUuid,
-        validation_status: 'CONFIRMED_DUPLICATE',
+        similarityScore: '0.5000',
+        similarToId: nonExistentUuid,
+        validationStatus: 'CONFIRMED_DUPLICATE',
       })
     ).rejects.toThrow();
   });
