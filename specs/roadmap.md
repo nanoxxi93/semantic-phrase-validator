@@ -70,7 +70,7 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- Ninguna (Fase 0 completada; pendiente inicio de Fase 1 bajo SDD).
+- [001-core-semantic-engine](2026-10-20-001-core-semantic-engine/) — Motor semántico de cálculo de similitud coseno, abstracción de embeddings con Hugging Face y persistencia base en PostgreSQL.
 
 ### En main, sin versión todavía
 - Gobernanza fundacional (`specs/mission.md`, `specs/tech-stack.md`, `specs/constitution.md`, `specs/constitution.rules.json`, `specs/roadmap.md`).
