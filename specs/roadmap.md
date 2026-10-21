@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 1 completada (001-core-semantic-engine)
+> **Estado actual:** Fase 2 en curso (002-phrase-validation-api)
 
 ---
 
@@ -70,7 +70,7 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- *Ninguna en curso actualmente. Próxima: `002-phrase-validation-api`.*
+- [002-phrase-validation-api](2026-10-21-002-phrase-validation-api/) — API REST con Express, servicios de validación semántica, persistencia relacional paginada y manejo centralizado de errores (Fase 2).
 
 ### Completadas
 - [001-core-semantic-engine](2026-10-20-001-core-semantic-engine/) — Motor semántico de cálculo de similitud coseno, abstracción de embeddings con Hugging Face y persistencia base en PostgreSQL (Fase 1).
