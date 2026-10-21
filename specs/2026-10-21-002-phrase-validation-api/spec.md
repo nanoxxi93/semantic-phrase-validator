@@ -103,17 +103,24 @@ La API REST de validación de frases provee los puntos de acceso HTTP necesarios
   - **Middleware JSON**: Parser con límite restrictivo de tamaño (`express.json({ limit: '10kb' })`) para neutralizar ataques de denegación de servicio por memoria.
   - **Middleware Global de Errores**: Captura centralizada que mapea errores (`ZodError`, `DuplicatePhraseError`, `ExternalAIProviderError`, `EmptyTextError`, `RateLimitExceeded`, `DatabaseError`) al formato canónico `{ success: false, error }`, ofuscando trazas de depuración y consultas de base de datos en entornos de producción.
 
-- **RF-6 (Contrato e Implementación de Caché LRU `EmbeddingCache`)**:
+- **RF-6 (Contrato e Implementación de Caché LRU `EmbeddingCache` con `lru-cache`)**:
   - Interfaz abstracta `EmbeddingCache`:
     - `get(key: string): Promise<number[] | null> | number[] | null`
     - `set(key: string, embedding: number[], ttlSeconds?: number): Promise<void> | void`
     - `delete(key: string): Promise<void> | void`
     - `clear(): Promise<void> | void`
-  - Implementación desacoplada en memoria (`InMemoryEmbeddingCache`):
+  - Implementación en memoria (`InMemoryEmbeddingCache`):
+    - Utiliza la librería estándar de la industria [`lru-cache`](https://www.npmjs.com/package/lru-cache) para gestión hiperoptimizada de estructuras LRU en el motor V8.
     - Almacena vectores en memoria asociados a la clave normalizada (`normalizedText.toLowerCase()`).
-    - Aplica expiración por TTL (configurable, default 1 hora = 3600s).
-    - Implementa política de expulsión estricta **LRU (*Least Recently Used*)**: al alcanzar la capacidad máxima (1,000 entradas), la inserción de un nuevo elemento desaloja automáticamente la entrada menos recientemente consultada.
-    - Su diseño mediante interfaz permite reemplazarla a futuro por un cliente distribuido (ej. Redis) sin modificar la capa de servicios.
+    - Aplica expiración por TTL (configurable vía `EMBEDDING_CACHE_TTL_SECONDS`, default 1 hora = 3600s).
+    - Implementa política de expulsión estricta **LRU (*Least Recently Used*)** con capacidad máxima de 1,000 entradas (`max: 1000`).
+    - Su diseño mediante interfaz abstracta permite sustituirla a futuro por un cliente distribuido (ej. Redis) sin modificar la capa de servicios.
+
+- **RF-7 (Arquitectura Modular de Rutas y Ensamblaje de Dependencias)**:
+  - Cada archivo de rutas (ej. `src/routes/phraseRoutes.ts`) es autónomo y encapsula el ensamblaje de su cadena de dependencias (`Repository` -> `Service` -> `Controller` -> `Router`).
+  - Utiliza la instancia única compartida (singleton) del cliente/pool de base de datos exportada desde `src/db/index.ts`, evitando recrear conexiones por ruta.
+  - Exporta el `Router` como exportación por defecto (`export default router`), permitiendo que `src/app.ts` permanezca conciso y desacoplado ante la incorporación de nuevos módulos (`app.use('/api/phrases', phraseRoutes)`).
+  - Los controladores y servicios continúan recibiendo sus dependencias mediante inyección en el constructor para permitir su testeo unitario aislado con mocks sin tocar los archivos de rutas.
 
 ## Requisitos no funcionales
 - **RNF-1 (Latencia de Endpoints)**: El tiempo de respuesta de `POST /api/phrases/validate` y `POST /api/phrases` no debe exceder 1.5 segundos en condiciones normales de inferencia, debe ser inferior a 50 ms cuando se activa el cortocircuito exacto o el acierto de caché de embeddings, y `GET /api/phrases` y `GET /api/health` deben responder en menos de 100 ms y 10 ms respectivamente, cumpliendo con `specs/mission.md`.
@@ -161,3 +168,6 @@ La API REST de validación de frases provee los puntos de acceso HTTP necesarios
   - Convención explícita de serialización en `camelCase` para todas las entidades en la capa HTTP (RF-2, RF-3, RNF-2).
   - Adición de manejo resiliente y tipado ante caídas de PostgreSQL con código `DATABASE_ERROR` (CA-15, RF-5, CE-11).
   - Ordenamiento determinista con índice compuesto `(created_at DESC, id DESC)` para optimización de paginación en base de datos (CA-06, RF-2, RF-3, RNF-11).
+- **2026-10-21 (Refactorización Modular y Adopción de lru-cache)**:
+  - Adopción de la librería `lru-cache` de npm para la gestión en memoria de embeddings.
+  - Ensamblaje modular de la cadena de dependencias en `phraseRoutes.ts` con exportación por defecto del `Router` y singleton compartido de base de datos (`db`), manteniendo `app.ts` desacoplado y conciso ante nuevos módulos.

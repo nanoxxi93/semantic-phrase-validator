@@ -144,7 +144,7 @@ La implementación se ejecutará en 7 etapas progresivas y testeables:
    - `set(key: string, embedding: number[], ttlSeconds?: number): Promise<void> | void`
    - `delete(key: string): Promise<void> | void`
    - `clear(): Promise<void> | void`
-2. Implementar `src/cache/inMemoryEmbeddingCache.ts` utilizando una estructura `Map` con ordenamiento LRU y expiración por marcas temporales (TTL), acotada a un límite configurable de 1,000 entradas.
+2. Instalar el paquete de producción `lru-cache` e implementar `src/cache/inMemoryEmbeddingCache.ts` como adaptador sobre `LRUCache<string, number[]>` con límite de 1,000 entradas y TTL configurable (por defecto 1 hora = 3600s).
 3. Crear suite de pruebas unitarias (`tests/unit/inMemoryEmbeddingCache.test.ts`) verificando: aciertos, fallos, expiración por TTL y desalojo LRU al sobrepasar la capacidad máxima.
 
 ### Etapa 4: Capa de Acceso a Datos `PhraseRepository` (`src/repositories/`)
@@ -171,13 +171,11 @@ La implementación se ejecutará en 7 etapas progresivas y testeables:
 2. `src/middlewares/contentTypeValidator.ts`: verificación de `Content-Type: application/json` en métodos `POST` (`415 Unsupported Media Type`).
 3. `src/middlewares/errorHandler.ts`: middleware global que transforma `ZodError` (400), `DuplicatePhraseError` (409), `ExternalAIProviderError` (503), fallos de DB (500) y errores inesperados al formato canónico `{ success: false, error }`, ofuscando trazas en producción.
 
-### Etapa 7: Controladores, Rutas y Servidor Express con Patrón Fábrica (`src/controllers/`, `src/routes/`, `src/app.ts`)
+### Etapa 7: Controladores, Rutas y Servidor Express con Ensamblaje Modular (`src/controllers/`, `src/routes/`, `src/app.ts`)
 1. Implementar esquemas Zod en `src/controllers/phrase.schemas.ts`.
 2. Implementar controladores `src/controllers/phraseController.ts` y `src/controllers/healthController.ts`.
-3. Declarar rutas en `src/routes/phraseRoutes.ts`.
-4. Implementar el patrón fábrica en `src/app.ts` exportando `createApp(options?: AppOptions)`:
-   - Permite inyectar instancias personalizadas o simuladas de `embeddingProvider`, `embeddingCache`, `phraseRepository` y `similarityThreshold`.
-   - Permite configurar o deshabilitar condicionalmente los rate limiters (`disableRateLimit?: boolean`) para evitar falsos positivos o bloqueos durante suites automatizadas de tests con `supertest`.
+3. Implementar `src/routes/phraseRoutes.ts` ensamblando de forma autónoma la cadena de dependencias del módulo (`PhraseRepository` consumiendo el singleton compartido `db` de `src/db/index.ts`, `HuggingFaceEmbeddingProvider`, `InMemoryEmbeddingCache`, `PhraseService`, `PhraseController`) y exportando el `Router` por defecto (`export default router`), manteniendo desacoplado y conciso a `src/app.ts` ante la incorporación de futuros módulos.
+4. Implementar `src/app.ts` montando middlewares globales (`helmet`, `cors`, `express.json`), sonda ultraligera `GET /api/health` y enrutador modular `app.use('/api/phrases', phraseRoutes)`, exportando la función fábrica `createApp(options?: AppOptions)` para permitir parametrización en tests de integración con `supertest`.
    - `src/index.ts` invoca `createApp()` con las instancias por defecto de producción y arranca el servidor HTTP en el puerto configurado.
 5. Suite completa de integración con Vitest y `supertest` (`tests/integration/phrases.api.integration.test.ts`), utilizando `createApp(...)` con `MockEmbeddingProvider` y `InMemoryEmbeddingCache`, cubriendo:
    - Validación y persistencia de frases únicas y duplicados confirmados.

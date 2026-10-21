@@ -26,8 +26,8 @@
 ## Fase 2: Capa de Caché LRU de Embeddings
 - [x] 2.1 Definir el contrato abstracto `EmbeddingCache` en `backend/src/cache/embeddingCache.interface.ts` con métodos `get(key: string)`, `set(key: string, embedding: number[], ttlSeconds?: number)`, `delete(key: string)` y `clear()`.
   *(No hay dependencias. Desbloquea la memoria intermedia).*
-- [x] 2.2 Implementar `InMemoryEmbeddingCache` en `backend/src/cache/inMemoryEmbeddingCache.ts` utilizando una estructura `Map` con ordenamiento LRU (*Least Recently Used*), capacidad máxima de 1,000 entradas y expiración por marca de tiempo TTL (RF-6, CA-11).
-  *(Depende de 2.1).*
+- [x] 2.2 Refactorizar `InMemoryEmbeddingCache` en `backend/src/cache/inMemoryEmbeddingCache.ts` integrando la librería oficial de npm `lru-cache` con capacidad máxima de 1,000 entradas y expiración por marca de tiempo TTL (RF-6, CA-11).
+  *(Depende de 2.1 e instalación de `lru-cache`).*
 - [x] 2.3 Implementar suite de pruebas unitarias en `backend/tests/unit/inMemoryEmbeddingCache.test.ts` verificando:
   - Almacenamiento y recuperación exitosa (cache hit).
   - Retorno de `null` ante claves inexistentes (cache miss).
@@ -92,13 +92,13 @@
   *(No hay dependencias).*
 - [x] 6.3 Implementar `backend/src/controllers/phraseController.ts` gestionando la validación Zod, invocando a `PhraseService` y retornando las respuestas canónicas en `camelCase`.
   *(Depende de 6.1 y Fase 4).*
-- [x] 6.4 Declarar las rutas en `backend/src/routes/phraseRoutes.ts` montando los middlewares correspondientes (`inferenceLimiter`, `readLimiter`, `contentTypeValidator`).
+- [x] 6.4 Implementar `backend/src/routes/phraseRoutes.ts` ensamblando de forma autónoma la cadena de dependencias del módulo (`PhraseRepository` con singleton `db`, `PhraseService`, `PhraseController`) y exportando el `Router` por defecto (`export default router`).
   *(Depende de 6.2, 6.3 y Fase 5).*
-- [x] 6.5 Implementar `backend/src/app.ts` exportando la fábrica `createApp(options?: AppOptions)`:
+- [x] 6.5 Implementar `backend/src/app.ts` importando directamente `phraseRoutes` (`app.use('/api/phrases', phraseRoutes)`), manteniendo `app.ts` conciso y desacoplado ante nuevos módulos, exportando la fábrica `createApp()`:
   - Configura `app.set('trust proxy', config.TRUST_PROXY)` para Fly.io.
   - Inyecta middlewares globales: `helmet()`, `cors({ origin: CORS_ORIGINS })`, `express.json({ limit: '10kb' })`.
-  - Soporta inyección de dependencias (`embeddingProvider`, `embeddingCache`, `phraseRepository`, `disableRateLimit`) para pruebas de integración con `supertest`.
-  - Implementar `backend/src/index.ts` que arranca la aplicación llamando a `createApp()` con dependencias reales de producción.
+  - Sonda `GET /api/health` ultraligera.
+  - Implementar `backend/src/index.ts` que arranca la aplicación llamando a `createApp()`.
   *(Depende de 6.4 y Fase 5).*
 
 ## Fase 7: Pruebas de Integración y Auditoría Constitucional
