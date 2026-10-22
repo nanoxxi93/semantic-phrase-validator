@@ -8,8 +8,6 @@ import { createApp } from '../../src/app.js';
 import { MockEmbeddingProvider } from '../../src/providers/mockEmbeddingProvider.js';
 import { InMemoryEmbeddingCache } from '../../src/cache/inMemoryEmbeddingCache.js';
 import { PhraseRepository } from '../../src/repositories/phraseRepository.js';
-import { PhraseService } from '../../src/services/phraseService.js';
-import { createPhraseRouter } from '../../src/routes/phraseRoutes.js';
 import { assertSafeTestDatabase } from '../helpers/assertSafeTestDatabase.js';
 import { ExternalAIProviderError } from '../../src/errors/ExternalAIProviderError.js';
 
@@ -29,16 +27,13 @@ describe('Phrases REST API Integration Tests', () => {
     mockProvider = new MockEmbeddingProvider();
     cache = new InMemoryEmbeddingCache();
 
-    const phraseService = new PhraseService({
+    app = createApp({
+      phraseRepository: repository,
       embeddingProvider: mockProvider,
       embeddingCache: cache,
-      phraseRepository: repository,
-      threshold: 0.80,
+      similarityThreshold: 0.80,
+      disableRateLimit: true,
     });
-
-    const phraseRouter = createPhraseRouter(phraseService, { disableRateLimit: true });
-
-    app = createApp({ phraseRouter });
   });
 
   afterAll(async () => {
@@ -328,15 +323,12 @@ describe('Phrases REST API Integration Tests', () => {
     });
 
     it('should block requests exceeding rate limit with 429 and RATE_LIMIT_EXCEEDED (CA-12, CE-8)', async () => {
-      const rateLimitedService = new PhraseService({
+      const rateLimitedApp = createApp({
+        phraseRepository: repository,
         embeddingProvider: mockProvider,
         embeddingCache: cache,
-        phraseRepository: repository,
-        threshold: 0.80,
-      });
-
-      const rateLimitedApp = createApp({
-        phraseRouter: createPhraseRouter(rateLimitedService, { disableRateLimit: false }),
+        similarityThreshold: 0.80,
+        disableRateLimit: false,
       });
 
       // Rapidly issue requests until rate limit window triggers

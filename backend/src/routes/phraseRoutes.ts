@@ -1,78 +1,45 @@
 import { Router } from 'express';
 import type { RequestHandler } from 'express';
-import { db } from '../db/index.js';
-import { env } from '../config/env.js';
-import { PhraseRepository } from '../repositories/phraseRepository.js';
-import { HuggingFaceEmbeddingProvider } from '../providers/huggingFaceEmbeddingProvider.js';
-import { InMemoryEmbeddingCache } from '../cache/inMemoryEmbeddingCache.js';
-import { PhraseService } from '../services/phraseService.js';
-import { PhraseController } from '../controllers/phraseController.js';
+import type { PhraseController } from '../controllers/phraseController.js';
 import { contentTypeValidator } from '../middlewares/contentTypeValidator.js';
-import { inferenceLimiter, readLimiter } from '../middlewares/rateLimiter.js';
 
-// 1. Dependency chain assembly using shared database singleton
-export const phraseRepository = new PhraseRepository(db);
-
-export const embeddingProvider = new HuggingFaceEmbeddingProvider(
-  env.HF_TOKEN,
-  env.HF_MODEL
-);
-
-export const embeddingCache = new InMemoryEmbeddingCache({
-  maxCapacity: 1000,
-  defaultTtlSeconds: env.EMBEDDING_CACHE_TTL_SECONDS,
-});
-
-export const phraseService = new PhraseService({
-  embeddingProvider,
-  phraseRepository,
-  embeddingCache,
-  threshold: env.SIMILARITY_THRESHOLD,
-});
-
-export const phraseController = new PhraseController(phraseService);
+export interface PhraseRoutesOptions {
+  phraseController: PhraseController;
+  inferenceLimiter: RequestHandler;
+  readLimiter: RequestHandler;
+}
 
 /**
- * Factory helper for creating router instances with optional custom services in tests.
+ * Creates and configures the Express router for phrase validation and catalog operations.
+ * Binds content type validation and rate limiting middlewares.
+ * Strictly decoupled from infrastructure, database, and service instantiation.
  */
-export function createPhraseRouter(
-  service: PhraseService = phraseService,
-  options?: { disableRateLimit?: boolean }
-): Router {
+export function createPhraseRoutes(options: PhraseRoutesOptions): Router {
   const router = Router();
-  const controller = new PhraseController(service);
-
-  const passthrough: RequestHandler = (_req, _res, next) => next();
-  const activeInferenceLimiter = options?.disableRateLimit ? passthrough : inferenceLimiter;
-  const activeReadLimiter = options?.disableRateLimit ? passthrough : readLimiter;
+  const { phraseController, inferenceLimiter, readLimiter } = options;
 
   // POST /api/phrases/validate - Pre-validation endpoint
   router.post(
     '/validate',
     contentTypeValidator,
-    activeInferenceLimiter,
-    controller.validate
+    inferenceLimiter,
+    phraseController.validate
   );
 
   // POST /api/phrases - Phrase creation endpoint
   router.post(
     '/',
     contentTypeValidator,
-    activeInferenceLimiter,
-    controller.create
+    inferenceLimiter,
+    phraseController.create
   );
 
   // GET /api/phrases - Paginated catalog query endpoint
   router.get(
     '/',
-    activeReadLimiter,
-    controller.list
+    readLimiter,
+    phraseController.list
   );
 
   return router;
 }
-
-// 2. Default router instance with assembled dependencies
-const defaultRouter = createPhraseRouter(phraseService);
-
-export default defaultRouter;
