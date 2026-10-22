@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 2 y Refactorización 002.1 completadas (preparando Fase 3: 003-phrase-validator-ui)
+> **Estado actual:** Fase 3 (003-phrase-validator-ui) completada (preparando Fase 4: Documentación y Evidencia)
 
 ---
 
@@ -52,16 +52,16 @@ Refactorización de la arquitectura de ensamblaje (Composition Root) del backend
 
 ---
 
-## Fase 3: `003-phrase-validator-ui` (Interfaz de Usuario Reactiva)
+## Fase 3: `003-phrase-validator-ui` (Interfaz de Usuario Reactiva - Completada)
 Construcción de la interfaz SPA con Vue 3, Vite y Tailwind CSS, implementando la máquina de estados de validación y la experiencia de usuario completa.
-- [ ] Inicialización del frontend con Vue 3 (Composition API, `<script setup>`, TypeScript) y Tailwind CSS.
-- [ ] Creación del composable `usePhraseValidation` para gestionar el ciclo de estados:
-  - Estados: *idle*, *validating*, *duplicate_detected*, *saving*, *success*, *error*.
-- [ ] Creación del composable `usePhraseCatalog` para consultar y sincronizar el listado histórico de frases.
-- [ ] Componente `PhraseForm`: campo de entrada para oraciones cortas con botón de acción interactivo.
-- [ ] Componente `DuplicateAlertModal`: alerta visual que informa la detección de duplicado potencial, mostrando la frase más similar encontrada, el puntaje porcentual de afinidad y botones de acción ("Confirmar Guardado" / "Cancelar").
-- [ ] Componente `PhraseList`: listado de frases guardadas con badges visuales de estado (`UNIQUE` en verde, `CONFIRMED_DUPLICATE` en ámbar), fecha y puntaje de similitud asociado.
-- [ ] Manejo de feedback visual: estados de carga (spinners), deshabilitación de botones durante inferencia y mensajes de error amigables si falla el servicio de IA.
+- [x] Inicialización del frontend con Vue 3 (Composition API, `<script setup>`, TypeScript) y Tailwind CSS.
+- [x] Creación del composable `usePhraseValidation` para gestionar el ciclo de estados:
+  - Estados: *idle*, *validating*, *unique_approved*, *duplicate_informative*, *duplicate_warning*, *saving*, *error*.
+- [x] Creación del composable `usePhraseCatalog` para consultar y sincronizar el listado histórico de frases.
+- [x] Componente `PhraseForm`: campo de entrada para oraciones cortas con botón de acción interactivo.
+- [x] Componente `DuplicateAlertCard`: alerta visual que informa la detección de duplicado potencial, mostrando la frase más similar encontrada, el puntaje porcentual de afinidad y botones de acción ("Confirmar Guardado" / "Cancelar") según el estado.
+- [x] Componente `PhraseList`: listado de frases guardadas con badges visuales de estado (`UNIQUE` en verde, `CONFIRMED_DUPLICATE` en ámbar), fecha y puntaje de similitud asociado.
+- [x] Manejo de feedback visual: estados de carga con debounce de 150 ms para evitar FLS, deshabilitación de botones durante inferencia y mensajes de error amigables si falla el servicio de IA.
 
 ---
 
@@ -77,9 +77,11 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- [003-phrase-validator-ui](2026-10-21-003-phrase-validator-ui/) — Interfaz de usuario reactiva con Vue 3, Vite y Tailwind CSS, implementando la máquina de estados de validación semántica, alertas de duplicados y catálogo paginado.
+- Ninguna (preparando Fase 4: Documentación y Evidencia).
 
 ### Completadas
+- [003-phrase-validator-ui](2026-10-21-003-phrase-validator-ui/) — Interfaz de usuario reactiva con Vue 3, Vite y Tailwind CSS, implementando la máquina de estados de validación semántica, alertas de duplicados y catálogo paginado (Fase 3).
+- [002.1-app-composition-root](2026-10-21-002-1-app-composition-root/) — Centralización del Composition Root en Express Core (`app.ts`) y pureza de rutas.
 - [002-phrase-validation-api](2026-10-21-002-phrase-validation-api/) — API REST con Express, servicios de validación semántica, persistencia relacional paginada, caché LRU, rate limiting y manejo centralizado de errores (Fase 2).
 - [001-core-semantic-engine](2026-10-20-001-core-semantic-engine/) — Motor semántico de cálculo de similitud coseno, abstracción de embeddings con Hugging Face y persistencia base en PostgreSQL (Fase 1).
 

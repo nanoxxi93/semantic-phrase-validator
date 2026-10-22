@@ -87,7 +87,7 @@ La arquitectura del frontend respeta una separación de responsabilidades unidir
   - **Requisitos cubiertos:** RNF-1, RNF-5.
 
 - **Decisión 2: Vue 3 Composition API con `<script setup lang="ts">` y Máquina de Estados Finita en Composable**
-  - **Por qué:** Permite modelar el ciclo de vida de validación de forma predecible a través de estados mutuamente excluyentes (`IDLE`, `VALIDATING`, `SAVING`, `UNIQUE_APPROVED`, `DUPLICATE_WARNING`, `ERROR`). La lógica no reside en componentes de interfaz, lo que permite testear unitariamente todas las transiciones y casos extremos en Vitest sin necesidad de montar el DOM.
+  - **Por qué:** Permite modelar el ciclo de vida de validación de forma predecible a través de estados mutuamente excluyentes (`IDLE`, `VALIDATING`, `SAVING`, `UNIQUE_APPROVED`, `DUPLICATE_INFORMATIVE`, `DUPLICATE_WARNING`, `ERROR`). La lógica no reside en componentes de interfaz, lo que permite testear unitariamente todas las transiciones y casos extremos en Vitest sin necesidad de montar el DOM. Al diferenciar la pre-validación duplicada informativa (`DUPLICATE_INFORMATIVE`) del bloqueo de guardado con conflicto (`DUPLICATE_WARNING`), se preserva una UX intuitiva y ergonómica.
   - **Alternativas consideradas:**
     - *Librería pesada de gestión de estado global (Pinia / Vuex):* Descartada por sobrecarga innecesaria para el alcance de una SPA centrada en un único flujo de negocio; los Vue Composables con `ref` y `computed` ofrecen reactividad nativa pura y aislada.
   - **Requisitos cubiertos:** CU-1, CU-2, CU-3, RF-1, RF-2, RNF-1.
@@ -110,6 +110,10 @@ La arquitectura del frontend respeta una separación de responsabilidades unidir
   - **Por qué:** Las instancias serverless o contenedores con escalado a cero (como en Fly.io) presentan latencia por cold start en la primera petición. Ejecutar una llamada no bloqueante a `GET /api/health` durante el `onMounted()` de `App.vue` calienta la infraestructura de forma invisible para el usuario sin saturar la interfaz con badges o widgets de monitoreo.
   - **Requisitos cubiertos:** RF-3, Criterios de Aceptación.
 
+- **Decisión 7: Prevención de Flash de Carga (FLS) mediante Retardo de Skeleton (Debounced Loading a 150 ms)**
+  - **Por qué:** En llamadas locales o con respuestas cacheadas en memoria (< 150 ms), montar y desmontar inmediatamente el panel prominente de análisis semántico (`state-panel-VALIDATING`) produce un parpadeo visual molesto (Flash of Loading State). Se establece un retardo de 150 ms para la aparición del panel azul, mientras que el botón proporciona retroalimentación táctil inmediata deshabilitándose y mostrando su spinner.
+  - **Requisitos cubiertos:** RNF-3, Criterios de Aceptación, RF-2.
+
 ---
 
 ## Secuencia de implementación
@@ -126,7 +130,7 @@ La construcción de la Fase 3 se organizará en 7 etapas incrementales y verific
 1. Definir los contratos de datos en `src/types/`:
    - `phrase.ts`: `ValidationStatus`, `SimilarPhraseSummary`, `PhraseListItem`.
    - `api.ts`: `ApiResponse<T>`, `ApiErrorResponse`, `PhraseValidationResult`, `PaginatedPhrases`.
-   - `ui.ts`: `UiState` (`'IDLE' | 'VALIDATING' | 'SAVING' | 'UNIQUE_APPROVED' | 'DUPLICATE_WARNING' | 'ERROR'`), `ErrorState`.
+   - `ui.ts`: `UiState` (`'IDLE' | 'VALIDATING' | 'SAVING' | 'UNIQUE_APPROVED' | 'DUPLICATE_INFORMATIVE' | 'DUPLICATE_WARNING' | 'ERROR'`), `ErrorState`.
 2. Crear `src/config/env.ts` para resolver `import.meta.env.VITE_API_BASE_URL` con fallback a `http://localhost:3000/api`.
 3. Implementar `src/services/api.ts` con manejo canónico de respuestas JSON y la clase de error `ApiClientError`.
 4. Implementar `src/services/phraseService.ts` exponiendo `validatePhrase`, `createPhrase`, `listPhrases` y `checkHealth`.
@@ -135,8 +139,8 @@ La construcción de la Fase 3 se organizará en 7 etapas incrementales y verific
 ### Etapa 3: Composables Reactivos (Máquinas de Estados y Catálogo)
 1. Implementar `src/composables/usePhraseValidation.ts`:
    - Estado de entrada: `phraseText`, `charCount`, `isValidText`, `uiState`, `validationResult`, `errorState`.
-   - Acciones: `validate()`, `saveDirectly()`, `confirmDuplicateSave()`, `cancelDuplicate()`, `reset()`, y manejo de eventos `@input` para restaurar a `IDLE` desde `UNIQUE_APPROVED` o `ERROR`.
-   - Bloqueo en solo lectura del textarea durante `DUPLICATE_WARNING`.
+   - Acciones: `validatePhrase()` (transiciona a `UNIQUE_APPROVED` si `< 80%` o a `DUPLICATE_INFORMATIVE` si `≥ 80%`), `savePhrase()` (si 409 Conflict transiciona a `DUPLICATE_WARNING`), `confirmDuplicateSave()`, `cancelDuplicate()`, `reset()`, y manejo de eventos `@input` para restaurar a `IDLE` desde `UNIQUE_APPROVED`, `DUPLICATE_INFORMATIVE` o `ERROR`.
+   - Bloqueo en solo lectura del textarea exclusivamente durante `DUPLICATE_WARNING`.
 2. Implementar `src/composables/usePhraseCatalog.ts`:
    - Estado: `phrases`, `pagination`, `activeFilter`, `isLoading`.
    - Acciones: `fetchCatalog()`, `setFilter(filter)`, `changePage(page)`, `onPhraseCreated(phrase)`.
@@ -144,8 +148,8 @@ La construcción de la Fase 3 se organizará en 7 etapas incrementales y verific
 
 ### Etapa 4: Componentes del Formulario y Feedback de Validación
 1. Crear `src/components/AppHeader.vue`: Cabecera con branding y píldora con umbral fijo (80.0%).
-2. Crear `src/components/ValidationResultCard.vue`: Tarjeta verde para estado `UNIQUE_APPROVED` (< 80%) con score y frase más cercana.
-3. Crear `src/components/DuplicateAlertCard.vue`: Tarjeta ámbar para estado `DUPLICATE_WARNING` (≥ 80% o 409) con botones de acción ("Confirmar y guardar" y "Cancelar").
+2. Crear/Adaptar `src/components/ValidationResultCard.vue`: Tarjeta informativa para `UNIQUE_APPROVED` (verde, unicidad) y `DUPLICATE_INFORMATIVE` (ámbar, duplicado detectado sin botones de persistencia).
+3. Crear `src/components/DuplicateAlertCard.vue`: Tarjeta ámbar para estado `DUPLICATE_WARNING` (HTTP 409 tras guardado directo) con botones de acción ("Confirmar y guardar" y "Cancelar").
 4. Crear `src/components/ErrorAlertBanner.vue`: Banner para estado `ERROR` con detalle de código (`AI_SERVICE_UNAVAILABLE`, `RATE_LIMIT_EXCEEDED`, etc.).
 5. Crear `src/components/PhraseForm.vue`: Formulario principal integrando textarea, contador reactivo de 280 caracteres, barra de botones ("Validar similitud" y "Guardar frase") y ranura dinámica para los banners de estado.
 6. Pruebas de componentes con `@vue/test-utils` validando deshabilitación de botones y emisión de eventos.
