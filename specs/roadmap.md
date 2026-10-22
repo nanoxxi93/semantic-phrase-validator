@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 4 (004-documentation-and-evidence) en curso (especificación iniciada)
+> **Estado actual:** Fase 4 (004-documentation-and-evidence) completada (proyecto listo para despliegue y entrega final)
 
 ---
 
@@ -65,21 +65,24 @@ Construcción de la interfaz SPA con Vue 3, Vite y Tailwind CSS, implementando l
 
 ---
 
-## Fase 4: Documentación y Evidencia
-Consolidación final del proyecto, verificación integral de calidad y documentación de la arquitectura.
-- [ ] Documentación detallada en `README.md` con instrucciones de configuración local, ejecución de migraciones, variables de entorno y comandos de test.
-- [ ] Diagramas de arquitectura y flujo de validación semántica documentados.
-- [ ] Registro de evidencias de integración exitosa con la API de Hugging Face y capturas del flujo de usuario.
-- [ ] Auditoría de cierre: verificación de cero infracciones constitucionales y pase de la suite completa de tests.
+## Fase 4: `004-documentation-and-evidence` (Documentación, Script SQL y Evidencia de IA - Completada)
+Consolidación final del proyecto, verificación integral de calidad, arquitectura documental modular y evidencias reproducibles.
+- [x] Documentación jerárquica en 3 portales: `README.md` en raíz, `backend/README.md` y `frontend/README.md`.
+- [x] Diagramas de arquitectura en ASCII y justificación de decisiones de ingeniería (cálculo en memoria, proyección SQL sin vectores, caché LRU de embeddings).
+- [x] Script SQL consolidado e idempotente `scripts/schema.sql` con soporte para ejecución nativa o vía `docker exec`.
+- [x] Registro y verificación de evidencias de inferencia con Hugging Face (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`) con comando ejecutable `npm run test:hf`.
+- [x] Comandos unificados de ciclo de vida en monorepo (`test:monorepo`, `typecheck`, `db:migrate`, `test:hf`).
+- [x] Auditoría de cierre: verificación de cero infracciones constitucionales y pase de la suite completa de tests automatizados (101 tests).
 
 ---
 
 ## Tareas Sueltas
 
 ### En curso
-- [004-documentation-and-evidence](2026-10-21-004-documentation-and-evidence/) — Documentación integral del repositorio, guía de ejecución local, script SQL consolidado, evidencia de inferencia con Hugging Face y auditoría de cierre para el despliegue del sistema.
+- Ninguna (Fase 4 completada exitosamente).
 
 ### Completadas
+- [004-documentation-and-evidence](2026-10-21-004-documentation-and-evidence/) — Documentación integral del monorepo, guía de ejecución local, script SQL consolidado, evidencia de inferencia con Hugging Face y auditoría de cierre para el despliegue del sistema (Fase 4).
 - [003-phrase-validator-ui](2026-10-21-003-phrase-validator-ui/) — Interfaz de usuario reactiva con Vue 3, Vite y Tailwind CSS, implementando la máquina de estados de validación semántica, alertas de duplicados y catálogo paginado (Fase 3).
 - [002.1-app-composition-root](2026-10-21-002-1-app-composition-root/) — Centralización del Composition Root en Express Core (`app.ts`) y pureza de rutas.
 - [002-phrase-validation-api](2026-10-21-002-phrase-validation-api/) — API REST con Express, servicios de validación semántica, persistencia relacional paginada, caché LRU, rate limiting y manejo centralizado de errores (Fase 2).

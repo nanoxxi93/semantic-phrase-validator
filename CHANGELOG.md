@@ -8,6 +8,23 @@ Categorías: **Añadido** (algo nuevo) · **Cambiado** (algo existente se compor
 
 ## [Sin publicar]
 
+### 2026-10-22
+
+#### Añadido
+- Implementación completa de `004-documentation-and-evidence` (Fase 4 del roadmap):
+  - Arquitectura documental modular en 3 niveles: portal unificado en raíz (`README.md`), manual técnico de la API (`backend/README.md`) y manual técnico de la SPA (`frontend/README.md`).
+  - Script SQL consolidado e idempotente (`scripts/schema.sql`) para inicialización directa en PostgreSQL 17 sin herramientas de build, con extensión `pgcrypto`, tabla `phrases`, auto-referencia foránea e índice compuesto descendente.
+  - Comandos unificados de ciclo de vida en `package.json`: `npm run test:monorepo` (101 tests), `npm run typecheck`, `npm run test:hf` y `npm run db:migrate`.
+  - Diagnóstico preventivo en `backend/src/scripts/testHuggingFace.ts` ante tokens placeholder o cuentas sin saldo de inferencia.
+  - Informe de evidencia experimental reproducible con Hugging Face (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`) con métricas comprobadas: idéntica `0.9993`, paráfrasis `0.8390` y no relacionada `0.1014`.
+  - Guía de resolución de problemas (Troubleshooting) cubriendo colisiones de puertos (5432/3000), CORS ante puerto dinámico de Vite (`5174`) y despliegue sin Docker.
+- Implementación completa de `003-phrase-validator-ui` (Fase 3 del roadmap):
+  - SPA reactiva desarrollada con Vue 3 (Composition API, `<script setup>`), Tailwind CSS v3 y Vite.
+  - Máquina de estados de validación semántica en `usePhraseValidation` con 7 estados deterministas (`IDLE`, `VALIDATING`, `UNIQUE_APPROVED`, `DUPLICATE_INFORMATIVE`, `DUPLICATE_WARNING`, `SAVING`, `ERROR`).
+  - Catálogo reactivo paginado en `usePhraseCatalog` con selector de filtros por estado y reseteo automático de visualización.
+  - Componentes accesibles (`PhraseForm`, `DuplicateAlertCard`, `ValidationResultCard`, `ErrorAlertBanner`, `PhraseCard`, `PaginationBar`).
+  - Suite de 35 pruebas automatizadas con Vitest, `@vue/test-utils` y `happy-dom`.
+
 ### 2026-10-21
 
 #### Cambiado
