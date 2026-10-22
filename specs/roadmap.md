@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 2 completada (preparando Fase 3: 003-phrase-validator-ui)
+> **Estado actual:** Refactorización intermedia en curso (002.1-app-composition-root)
 
 ---
 
@@ -43,6 +43,12 @@ Implementación de la capa de servicios, validación de esquemas Zod, endpoints 
   - `GET /api/health`: sonda ultraligera de salud para Fly.io y Docker.
 - [x] Middlewares de hardening (`helmet`, `cors`), rate limiting por IP real (`trust proxy`), Content-Type validator (415) y manejo canónico de errores.
 - [x] Pruebas de integración automatizadas con Vitest y `supertest` cubriendo el flujo completo de validación y persistencia.
+
+---
+
+## Fase 2.1: `002-1-app-composition-root` (Refactorización de Ensamblaje en app.ts y Pureza de Rutas - En Curso)
+Refactorización de la arquitectura de ensamblaje (Composition Root) del backend, centralizando la instanciación de dependencias en `createApp()` de `src/app.ts` y purificando `src/routes/phraseRoutes.ts`.
+- [ ] [`002.1-app-composition-root`](2026-10-21-002-1-app-composition-root/) — Centralización del Composition Root en Express Core (`app.ts`) y pureza de rutas.
 
 ---
 
