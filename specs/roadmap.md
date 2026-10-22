@@ -77,7 +77,7 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- Ninguna tarea activa en este momento (preparando Fase 3).
+- [003-phrase-validator-ui](2026-10-21-003-phrase-validator-ui/) — Interfaz de usuario reactiva con Vue 3, Vite y Tailwind CSS, implementando la máquina de estados de validación semántica, alertas de duplicados y catálogo paginado.
 
 ### Completadas
 - [002-phrase-validation-api](2026-10-21-002-phrase-validation-api/) — API REST con Express, servicios de validación semántica, persistencia relacional paginada, caché LRU, rate limiting y manejo centralizado de errores (Fase 2).
