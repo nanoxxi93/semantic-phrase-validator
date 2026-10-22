@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 3 (003-phrase-validator-ui) completada (preparando Fase 4: Documentación y Evidencia)
+> **Estado actual:** Fase 4 (004-documentation-and-evidence) en curso (especificación iniciada)
 
 ---
 
@@ -77,7 +77,7 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- Ninguna (preparando Fase 4: Documentación y Evidencia).
+- [004-documentation-and-evidence](2026-10-21-004-documentation-and-evidence/) — Documentación integral del repositorio, guía de ejecución local, script SQL consolidado, evidencia de inferencia con Hugging Face y auditoría de cierre para el despliegue del sistema.
 
 ### Completadas
 - [003-phrase-validator-ui](2026-10-21-003-phrase-validator-ui/) — Interfaz de usuario reactiva con Vue 3, Vite y Tailwind CSS, implementando la máquina de estados de validación semántica, alertas de duplicados y catálogo paginado (Fase 3).
