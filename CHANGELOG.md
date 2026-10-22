@@ -11,6 +11,16 @@ Categorías: **Añadido** (algo nuevo) · **Cambiado** (algo existente se compor
 ### 2026-10-21
 
 #### Añadido
+- Implementación completa de `002-phrase-validation-api` (Fase 2 del roadmap):
+  - Endpoints REST en Express (`POST /api/phrases/validate`, `POST /api/phrases`, `GET /api/phrases`, `GET /api/health`).
+  - Pre-validación informativa con score exacto y frase más cercana sin consumir cuota externa en coincidencias exactas (cortocircuito a 1.0000).
+  - Persistencia condicionada con bloqueo `409 Conflict` (`DUPLICATE_PHRASE_DETECTED`) ante duplicados no confirmados y guardado de `CONFIRMED_DUPLICATE` con trazabilidad al confirmar.
+  - Paginación determinista en catálogo con índice compuesto `(created_at DESC, id DESC)`, exclusión del vector `embedding` y filtros por estado.
+  - Capa de acceso a datos `PhraseRepository` con Drizzle ORM, casting numérico de `similarityScore` y resolución de auto-joins.
+  - Capa de caché LRU en memoria con `lru-cache` y TTL de 1 hora para reutilización transparente de vectores.
+  - Arquitectura modular de rutas donde `phraseRoutes.ts` ensambla su cadena de dependencias con pool singleton de base de datos (`db`).
+  - Middlewares de seguridad: `helmet`, `cors`, `contentTypeValidator` (HTTP 415), `rateLimiter` (30 req/min inferencia, 100 req/min lectura con soporte para `trust proxy` en Fly.io) y manejador canónico de errores (`errorHandler`).
+  - Suite de integración E2E con `supertest` y Vitest, alcanzando 66 pruebas automatizadas con 100% de éxito.
 - Implementación completa de `001-core-semantic-engine` (Fase 1 del roadmap).
 - Estructura monorepo con `backend/` en TypeScript estricto (`"strict": true`, `"moduleResolution": "node16"`).
 - Entorno de base de datos PostgreSQL 17 (`postgres:17-alpine`) en `docker-compose.yml`.

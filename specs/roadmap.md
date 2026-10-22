@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 2 en curso (002-phrase-validation-api)
+> **Estado actual:** Fase 2 completada (preparando Fase 3: 003-phrase-validator-ui)
 
 ---
 
@@ -27,21 +27,22 @@ Construcción del núcleo matemático, la capa de persistencia en PostgreSQL con
 
 ---
 
-## Fase 2: `002-phrase-validation-api` (API REST y Lógica de Negocio)
+## Fase 2: `002-phrase-validation-api` (API REST y Lógica de Negocio - Completada)
 Implementación de la capa de servicios, validación de esquemas Zod, endpoints HTTP en Express y manejo centralizado de errores.
-- [ ] Configuración de variables de entorno con esquema de validación Zod (`DATABASE_URL`, `HF_TOKEN`, `HF_MODEL`, `SIMILARITY_THRESHOLD`, `PORT`).
-- [ ] Implementación de `PhraseRepository` con Drizzle para operaciones CRUD de frases y lectura de vectores existentes.
-- [ ] Implementación de `PhraseService` con la lógica de negocio:
-  - Generación de embedding para la frase entrante.
-  - Comparación contra el catálogo de frases previas mediante similitud coseno.
-  - Evaluación del umbral de similitud configurable (`SIMILARITY_THRESHOLD`).
+- [x] Configuración de variables de entorno con esquema de validación Zod (`DATABASE_URL`, `HF_TOKEN`, `HF_MODEL`, `SIMILARITY_THRESHOLD`, `PORT`, `TRUST_PROXY`, `EMBEDDING_CACHE_TTL_SECONDS`, `RATE_LIMIT_*`, `CORS_ORIGINS`).
+- [x] Implementación de `PhraseRepository` con Drizzle para operaciones CRUD de frases, ordenamiento determinista, lectura de vectores y resolución de auto-joins.
+- [x] Implementación de `PhraseService` con la lógica de negocio:
+  - Cortocircuito exacto de texto con 0 llamadas a IA (score 1.0000).
+  - Consulta y almacenamiento en caché LRU de embeddings (`lru-cache`).
+  - Inferencia con Hugging Face y cálculo de similitud coseno contra catálogo.
   - Determinación de duplicados y asociación de metadatos (`similar_to_id`, `similarity_score`).
-- [ ] Creación de endpoints REST con validación Zod:
-  - `POST /api/phrases/validate`: analiza una frase candidata y retorna si es potencialmente duplicada con su score y frase causante.
-  - `POST /api/phrases`: persiste la frase con su estado (`UNIQUE` o `CONFIRMED_DUPLICATE`) y metadatos correspondientes.
-  - `GET /api/phrases`: lista todas las frases registradas ordenadas cronológicamente con sus metadatos.
-- [ ] Middleware global para manejo de errores estandarizado (`400 Bad Request`, `500 Internal Server Error`, `503 Service Unavailable`).
-- [ ] Pruebas de integración automatizadas con Vitest y `supertest` cubriendo el flujo completo de validación y persistencia.
+- [x] Creación de endpoints REST con validación Zod y arquitectura modular:
+  - `POST /api/phrases/validate`: pre-validación informativa con score más afín y frase causante.
+  - `POST /api/phrases`: persistencia como `UNIQUE` o `CONFIRMED_DUPLICATE` (bloqueo 409 si no confirmada).
+  - `GET /api/phrases`: consulta paginada determinista (`created_at DESC, id DESC`) con filtro de estado y exclusión del vector.
+  - `GET /api/health`: sonda ultraligera de salud para Fly.io y Docker.
+- [x] Middlewares de hardening (`helmet`, `cors`), rate limiting por IP real (`trust proxy`), Content-Type validator (415) y manejo canónico de errores.
+- [x] Pruebas de integración automatizadas con Vitest y `supertest` cubriendo el flujo completo de validación y persistencia.
 
 ---
 
@@ -70,9 +71,10 @@ Consolidación final del proyecto, verificación integral de calidad y documenta
 ## Tareas Sueltas
 
 ### En curso
-- [002-phrase-validation-api](2026-10-21-002-phrase-validation-api/) — API REST con Express, servicios de validación semántica, persistencia relacional paginada y manejo centralizado de errores (Fase 2).
+- Ninguna tarea activa en este momento (preparando Fase 3).
 
 ### Completadas
+- [002-phrase-validation-api](2026-10-21-002-phrase-validation-api/) — API REST con Express, servicios de validación semántica, persistencia relacional paginada, caché LRU, rate limiting y manejo centralizado de errores (Fase 2).
 - [001-core-semantic-engine](2026-10-20-001-core-semantic-engine/) — Motor semántico de cálculo de similitud coseno, abstracción de embeddings con Hugging Face y persistencia base en PostgreSQL (Fase 1).
 
 ### En main, sin versión todavía
