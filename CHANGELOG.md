@@ -10,6 +10,13 @@ Categorías: **Añadido** (algo nuevo) · **Cambiado** (algo existente se compor
 
 ### 2026-10-21
 
+#### Cambiado
+- Refactorización de la arquitectura de ensamblaje (`002.1-app-composition-root`):
+  - Centralización del Composition Root en `createApp(options?: AppOptions)` de `src/app.ts`, con soporte para inyección de dependencias en tests y resolución productiva por defecto.
+  - Purificación estricta de la capa de transporte en `src/routes/phraseRoutes.ts`, exportando exclusivamente la interfaz `PhraseRoutesOptions` y la factoría `createPhraseRoutes(options)`, erradicando sentencias `new` e importaciones de base de datos.
+  - Supresión de la exportación ansiosa de singleton (`export const app = createApp()`) en `app.ts` para evitar efectos colaterales al importar en tests.
+  - Simplificación del setup de pruebas de integración en `tests/integration/phrases.api.integration.test.ts` delegando el ensamblaje directamente en `createApp`.
+
 #### Añadido
 - Implementación completa de `002-phrase-validation-api` (Fase 2 del roadmap):
   - Endpoints REST en Express (`POST /api/phrases/validate`, `POST /api/phrases`, `GET /api/phrases`, `GET /api/health`).

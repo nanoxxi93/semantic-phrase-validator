@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Refactorización intermedia en curso (002.1-app-composition-root)
+> **Estado actual:** Fase 2 y Refactorización 002.1 completadas (preparando Fase 3: 003-phrase-validator-ui)
 
 ---
 
@@ -46,9 +46,9 @@ Implementación de la capa de servicios, validación de esquemas Zod, endpoints 
 
 ---
 
-## Fase 2.1: `002-1-app-composition-root` (Refactorización de Ensamblaje en app.ts y Pureza de Rutas - En Curso)
+## Fase 2.1: `002-1-app-composition-root` (Refactorización de Ensamblaje en app.ts y Pureza de Rutas - Completada)
 Refactorización de la arquitectura de ensamblaje (Composition Root) del backend, centralizando la instanciación de dependencias en `createApp()` de `src/app.ts` y purificando `src/routes/phraseRoutes.ts`.
-- [ ] [`002.1-app-composition-root`](2026-10-21-002-1-app-composition-root/) — Centralización del Composition Root en Express Core (`app.ts`) y pureza de rutas.
+- [x] [`002.1-app-composition-root`](2026-10-21-002-1-app-composition-root/) — Centralización del Composition Root en Express Core (`app.ts`) y pureza de rutas.
 
 ---
 
