@@ -11,13 +11,13 @@ El código del backend debe respetar una arquitectura en capas unidireccional y 
 - **`controllers/` (Capa de Transporte HTTP):** Responsable exclusivo de parsear peticiones HTTP, invocar esquemas de validación Zod, llamar a los servicios de dominio correspondientes y mapear los resultados a códigos de estado HTTP estándar. Los controladores jamás ejecutan consultas SQL directas ni contienen lógica de negocio o cálculos matemáticos.
 - **`services/` (Capa de Dominio y Negocio):** Contiene la orquestación del flujo de validación semántica, la evaluación de umbrales (`SIMILARITY_THRESHOLD`) y las decisiones de duplicidad. No conoce detalles de Express (no recibe `req` ni `res`).
 - **`repositories/` (Capa de Acceso a Datos):** Encapsula todas las operaciones de consulta y persistencia en PostgreSQL mediante Drizzle ORM. Es la única capa autorizada a importar esquemas de tablas Drizzle y ejecutar queries en base de datos.
-- **`providers/` (Capa de Integración Externa):** Aloja los clientes de servicios externos (específicamente Hugging Face Inference API). No contiene lógica de negocio y debe responder a contratos abstractos.
-- **`utils/` (Utilidades Puras):** Funciones deterministas puras sin efectos secundarios ni dependencias de I/O, en particular el cálculo matemático de similitud coseno entre vectores numéricos.
+- **`providers/` (Capa de Integración Externa):** Aloja los clientes de servicios externos (Hugging Face Inference API y Cloudflare Workers AI). No contiene lógica de negocio y debe responder a contratos abstractos.
+- **`utils/` (Utilidades Puras):** Funciones deterministas puras sin efectos secundarios ni dependencias de I/O, en particular el cálculo matemático de similitud coseno entre vectores numéricos de dimensionalidad dinámica.
 
 ### 1.2 Inversión de Dependencias en Inferencia de IA
-- El cliente de Hugging Face debe implementar obligatoriamente la interfaz abstracta `EmbeddingProvider` (ej. `generateEmbedding(text: string): Promise<number[]>`).
+- Todo cliente de inferencia (Hugging Face, Cloudflare Workers AI o futuros proveedores) debe implementar obligatoriamente la interfaz abstracta `EmbeddingProvider` (ej. `generateEmbedding(text: string): Promise<number[]>` y `readonly modelIdentifier: string`).
 - La capa de servicios (`PhraseService`) debe recibir su instancia de `EmbeddingProvider` mediante inyección de dependencias (vía constructor o factoría).
-- Queda terminantemente prohibido instanciar el SDK de Hugging Face o realizar llamadas directas a APIs de red dentro de los tests unitarios o suites automatizadas de integración. Los tests deben utilizar implementaciones mock deterministas (`MockEmbeddingProvider`).
+- Queda terminantemente prohibido instanciar los clientes reales de inferencia o realizar llamadas directas a APIs de red dentro de los tests unitarios o suites automatizadas de integración. Los tests deben utilizar implementaciones mock deterministas (`MockEmbeddingProvider`).
 
 ### 1.3 Frontend Desacoplado y Arquitectura Basada en Composables
 - **Composables Reactivos (`composables/`):** Toda la lógica de estado, ciclo de vida de validación semántica (máquina de estados: *idle*, *validating*, *duplicate_detected*, *saving*, *success*, *error*), temporizadores y llamadas a la API REST deben encapsularse dentro de Vue Composables (ej. `usePhraseValidation`, `usePhraseCatalog`).
@@ -60,7 +60,7 @@ Todas las respuestas de la API REST deben mantener una estructura uniforme y pre
 - `201 Created`: Frase persistida con éxito en PostgreSQL.
 - `400 Bad Request`: Payload inválido, texto vacío o campos fuera de rango según schema Zod.
 - `500 Internal Server Error`: Errores no controlados de base de datos o fallos internos.
-- `503 Service Unavailable`: Errores al conectar con el servicio de inferencia de IA (Hugging Face) o indisponibilidad de la API externa, evitando caídas silenciosas.
+- `503 Service Unavailable`: Errores al conectar con el servicio de inferencia de IA (Hugging Face o Cloudflare Workers AI) o indisponibilidad de la API externa, evitando caídas silenciosas o fallbacks no autorizados.
 
 ---
 
@@ -70,8 +70,13 @@ Todas las respuestas de la API REST deben mantener una estructura uniforme y pre
 - Se prohíbe taxativamente escribir credenciales, URLs de base de datos o claves de API dentro del código fuente.
 - Todas las variables sensibles deben inyectarse mediante archivos `.env` (no versionados) y validarse al inicio del servidor mediante un esquema Zod de configuración (`src/config/env.ts`):
   - `DATABASE_URL`: Cadena de conexión PostgreSQL.
+  - `EMBEDDING_PROVIDER`: Proveedor de inferencia activo (`huggingface` o `cloudflare`).
   - `HF_TOKEN`: Token de acceso para la API de inferencia de Hugging Face.
-  - `HF_MODEL`: Identificador del modelo (ej. `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`).
+  - `HF_MODEL`: Identificador del modelo Hugging Face.
+  - `CLOUDFLARE_ACCOUNT_ID`: Identificador de cuenta de Cloudflare.
+  - `CLOUDFLARE_API_TOKEN`: Token de API para Cloudflare Workers AI.
+  - `CLOUDFLARE_MODEL`: Identificador del modelo Cloudflare Workers AI.
+  - `CLOUDFLARE_GATEWAY_ID`: Identificador opcional de Cloudflare AI Gateway.
   - `SIMILARITY_THRESHOLD`: Valor numérico flotante para el umbral de detección de duplicados (ej. `0.80`).
   - `PORT`: Puerto HTTP para el servidor backend (ej. `3000`).
 

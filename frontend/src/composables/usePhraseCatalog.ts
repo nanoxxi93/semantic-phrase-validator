@@ -5,8 +5,9 @@ import type { PhraseListItem, ValidationStatus } from '../types/phrase.js';
 import type { PaginationMetadata } from '../types/api.js';
 import type { CatalogFilter, ErrorState } from '../types/ui.js';
 
-export const usePhraseCatalog = () => {
+export const usePhraseCatalog = (initialModelId?: string) => {
   const phrases = ref<PhraseListItem[]>([]);
+  const selectedModel = ref<string | undefined>(initialModelId);
   const pagination = ref<PaginationMetadata>({
     page: 1,
     limit: 10,
@@ -25,11 +26,18 @@ export const usePhraseCatalog = () => {
       activeFilter.value === 'ALL' ? undefined : activeFilter.value;
 
     try {
-      const response = await phraseService.listPhrases(
-        pagination.value.page,
-        pagination.value.limit,
-        statusParam
-      );
+      const response = selectedModel.value !== undefined
+        ? await phraseService.listPhrases(
+            pagination.value.page,
+            pagination.value.limit,
+            statusParam,
+            selectedModel.value
+          )
+        : await phraseService.listPhrases(
+            pagination.value.page,
+            pagination.value.limit,
+            statusParam
+          );
       phrases.value = response.items;
       pagination.value = response.pagination;
     } catch (err) {
@@ -56,6 +64,13 @@ export const usePhraseCatalog = () => {
     await fetchCatalog();
   };
 
+  const setSelectedModel = async (newModel?: string): Promise<void> => {
+    if (selectedModel.value === newModel) return;
+    selectedModel.value = newModel;
+    pagination.value.page = 1;
+    await fetchCatalog();
+  };
+
   const changePage = async (newPage: number): Promise<void> => {
     if (
       newPage < 1 ||
@@ -69,28 +84,33 @@ export const usePhraseCatalog = () => {
   };
 
   const onPhraseCreated = async (createdPhrase: PhraseListItem): Promise<void> => {
-    const isExcludedByCurrentFilter =
-      activeFilter.value !== 'ALL' &&
-      activeFilter.value !== createdPhrase.validationStatus;
+    // If no model filter is active or the newly created phrase matches the currently viewed model
+    if (!selectedModel.value || !createdPhrase.embeddingModel || createdPhrase.embeddingModel === selectedModel.value) {
+      const isExcludedByCurrentFilter =
+        activeFilter.value !== 'ALL' &&
+        activeFilter.value !== createdPhrase.validationStatus;
 
-    if (isExcludedByCurrentFilter) {
-      activeFilter.value = 'ALL';
-      pagination.value.page = 1;
-    } else if (pagination.value.page > 1) {
-      pagination.value.page = 1;
+      if (isExcludedByCurrentFilter) {
+        activeFilter.value = 'ALL';
+        pagination.value.page = 1;
+      } else if (pagination.value.page > 1) {
+        pagination.value.page = 1;
+      }
+
+      await fetchCatalog();
     }
-
-    await fetchCatalog();
   };
 
   return {
     phrases,
+    selectedModel,
     pagination,
     activeFilter,
     isLoading,
     errorState,
     fetchCatalog,
     setFilter,
+    setSelectedModel,
     changePage,
     onPhraseCreated,
   };

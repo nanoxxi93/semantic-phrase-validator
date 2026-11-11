@@ -14,6 +14,7 @@ describe('usePhraseCatalog', () => {
         {
           id: '1',
           text: 'Sentence 1',
+          embeddingModel: '@cf/baai/bge-m3',
           validationStatus: 'UNIQUE' as const,
           similarityScore: null,
           similarToId: null,
@@ -82,6 +83,7 @@ describe('usePhraseCatalog', () => {
     const newDuplicatePhrase: PhraseListItem = {
       id: 'dup-1',
       text: 'A duplicate phrase',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'CONFIRMED_DUPLICATE',
       similarityScore: 0.85,
       similarToId: 'orig-1',
@@ -109,6 +111,7 @@ describe('usePhraseCatalog', () => {
     const newPhrase: PhraseListItem = {
       id: 'uniq-1',
       text: 'A unique phrase',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'UNIQUE',
       similarityScore: null,
       similarToId: null,

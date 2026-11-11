@@ -2,10 +2,15 @@
 import { computed } from 'vue';
 import type { PhraseListItem } from '../types/phrase.js';
 import { formatDateTime, formatRelativeTime } from '../utils/date.js';
+import { getModelMeta } from '../constants/models.js';
 
 const props = defineProps<{
   phrase: PhraseListItem;
 }>();
+
+const modelMeta = computed(() => {
+  return getModelMeta(props.phrase.embeddingModel);
+});
 
 const scoreFormatted = computed(() => {
   if (props.phrase.similarityScore === null || props.phrase.similarityScore === undefined) {
@@ -58,9 +63,17 @@ const relativeTime = computed(() => {
         </div>
       </div>
 
-      <!-- Metadatos de Validación (Badge + Score + Fecha) -->
+      <!-- Metadatos de Validación (Badge Estado + Badge Modelo + Score + Fecha) -->
       <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100">
-        <div class="flex items-center gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <!-- Badge de modelo y dimensiones -->
+          <span
+            class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200"
+            :title="`Generado con modelo: ${phrase.embeddingModel || 'Desconocido'}`"
+          >
+            {{ modelMeta.shortLabel }}
+          </span>
+
           <template v-if="phrase.validationStatus === 'CONFIRMED_DUPLICATE'">
             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>

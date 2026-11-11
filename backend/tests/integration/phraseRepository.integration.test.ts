@@ -7,6 +7,8 @@ import { assertSafeTestDatabase } from '../helpers/assertSafeTestDatabase.js';
 
 describe('PhraseRepository Integration Tests', () => {
   let repository: PhraseRepository;
+  const defaultModel = 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2';
+  const cfModel = '@cf/baai/bge-m3';
 
   beforeAll(() => {
     assertSafeTestDatabase(env.DATABASE_URL, env.NODE_ENV);
@@ -27,6 +29,7 @@ describe('PhraseRepository Integration Tests', () => {
     const created = await repository.create({
       text: 'Frase única de prueba',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',
@@ -34,6 +37,7 @@ describe('PhraseRepository Integration Tests', () => {
 
     expect(created.id).toBeDefined();
     expect(created.text).toBe('Frase única de prueba');
+    expect(created.embeddingModel).toBe(defaultModel);
     expect(created.validationStatus).toBe('UNIQUE');
     expect(created.similarityScore).toBeNull();
     expect(created.similarToId).toBeNull();
@@ -49,6 +53,7 @@ describe('PhraseRepository Integration Tests', () => {
     const original = await repository.create({
       text: 'Frase original base',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',
@@ -57,12 +62,14 @@ describe('PhraseRepository Integration Tests', () => {
     const duplicate = await repository.create({
       text: 'Frase paráfrasis confirmada',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: 0.8875,
       similarToId: original.id,
       validationStatus: 'CONFIRMED_DUPLICATE',
     });
 
     expect(duplicate.validationStatus).toBe('CONFIRMED_DUPLICATE');
+    expect(duplicate.embeddingModel).toBe(defaultModel);
     expect(typeof duplicate.similarityScore).toBe('number');
     expect(duplicate.similarityScore).toBe(0.8875);
     expect(duplicate.similarToId).toBe(original.id);
@@ -79,6 +86,7 @@ describe('PhraseRepository Integration Tests', () => {
       await repository.create({
         text: `Frase ${i}`,
         embedding: dummyEmbedding,
+        embeddingModel: defaultModel,
         similarityScore: null,
         similarToId: null,
         validationStatus: 'UNIQUE',
@@ -112,6 +120,7 @@ describe('PhraseRepository Integration Tests', () => {
     await repository.create({
       text: 'Frase única 1',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',
@@ -120,6 +129,7 @@ describe('PhraseRepository Integration Tests', () => {
     await repository.create({
       text: 'Frase única 2',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',
@@ -128,6 +138,7 @@ describe('PhraseRepository Integration Tests', () => {
     await repository.create({
       text: 'Frase duplicada',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: 0.9,
       similarToId: null,
       validationStatus: 'CONFIRMED_DUPLICATE',
@@ -143,12 +154,57 @@ describe('PhraseRepository Integration Tests', () => {
     expect(uniqueList.every((item) => item.validationStatus === 'UNIQUE')).toBe(true);
   });
 
+  it('should filter phrases strictly by embeddingModel in findAll, countAll and getAllEmbeddings (CA-07)', async () => {
+    const dummyEmbedding384 = new Array(384).fill(0.02);
+    const dummyEmbedding1024 = new Array(1024).fill(0.03);
+
+    await repository.create({
+      text: 'Frase Hugging Face',
+      embedding: dummyEmbedding384,
+      embeddingModel: defaultModel,
+      similarityScore: null,
+      similarToId: null,
+      validationStatus: 'UNIQUE',
+    });
+
+    await repository.create({
+      text: 'Frase Cloudflare BGE-M3',
+      embedding: dummyEmbedding1024,
+      embeddingModel: cfModel,
+      similarityScore: null,
+      similarToId: null,
+      validationStatus: 'UNIQUE',
+    });
+
+    const hfCount = await repository.countAll(undefined, defaultModel);
+    const cfCount = await repository.countAll(undefined, cfModel);
+    expect(hfCount).toBe(1);
+    expect(cfCount).toBe(1);
+
+    const hfList = await repository.findAll({ page: 1, limit: 10, embeddingModel: defaultModel });
+    expect(hfList).toHaveLength(1);
+    expect(hfList[0].text).toBe('Frase Hugging Face');
+
+    const cfList = await repository.findAll({ page: 1, limit: 10, embeddingModel: cfModel });
+    expect(cfList).toHaveLength(1);
+    expect(cfList[0].text).toBe('Frase Cloudflare BGE-M3');
+
+    const hfEmbeddings = await repository.getAllEmbeddings(defaultModel);
+    expect(hfEmbeddings).toHaveLength(1);
+    expect(hfEmbeddings[0].embedding).toHaveLength(384);
+
+    const cfEmbeddings = await repository.getAllEmbeddings(cfModel);
+    expect(cfEmbeddings).toHaveLength(1);
+    expect(cfEmbeddings[0].embedding).toHaveLength(1024);
+  });
+
   it('should retrieve all embeddings with id, text and vector', async () => {
     const dummyEmbedding = new Array(384).fill(0.07);
 
     await repository.create({
       text: 'Frase para vector',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',
@@ -167,6 +223,7 @@ describe('PhraseRepository Integration Tests', () => {
     await repository.create({
       text: 'Comprar Leche Fresca',
       embedding: dummyEmbedding,
+      embeddingModel: defaultModel,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',

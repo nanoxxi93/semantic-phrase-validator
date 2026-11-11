@@ -15,6 +15,13 @@
       "when": 1792620773077,
       "tag": "0001_futuristic_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794370943654,
+      "tag": "0002_flawless_morph",
+      "breakpoints": true
     }
   ]
 }

@@ -9,9 +9,11 @@ import type { EmbeddingCache } from '../cache/embeddingCache.interface.js';
 import { calculateCosineSimilarity } from '../utils/cosineSimilarity.js';
 import { DuplicatePhraseError } from '../errors/DuplicatePhraseError.js';
 import { EmptyTextError } from '../errors/EmptyTextError.js';
+import { ExternalAIProviderError } from '../errors/ExternalAIProviderError.js';
 
 export interface PhraseServiceOptions {
   embeddingProvider: EmbeddingProvider;
+  providers?: Map<string, EmbeddingProvider>;
   phraseRepository: PhraseRepositoryInterface;
   embeddingCache?: EmbeddingCache;
   threshold?: number;
@@ -37,20 +39,50 @@ export interface PaginatedPhrases {
 }
 
 /**
- * Domain service orchestrating phrase validation, persistence, and querying.
+ * Domain service orchestrating phrase validation, persistence, and querying across multiple embedding models.
  * Implements exact text short-circuiting, embedding cache lookups, and cosine similarity comparison.
  */
 export class PhraseService {
-  private readonly embeddingProvider: EmbeddingProvider;
+  private readonly defaultProvider: EmbeddingProvider;
+  private readonly providers: Map<string, EmbeddingProvider>;
   private readonly phraseRepository: PhraseRepositoryInterface;
   private readonly embeddingCache?: EmbeddingCache;
   private readonly threshold: number;
 
   constructor(options: PhraseServiceOptions) {
-    this.embeddingProvider = options.embeddingProvider;
+    this.defaultProvider = options.embeddingProvider;
+    this.providers = options.providers ?? new Map();
+    if (!this.providers.has(this.defaultProvider.modelIdentifier)) {
+      this.providers.set(this.defaultProvider.modelIdentifier, this.defaultProvider);
+    }
     this.phraseRepository = options.phraseRepository;
     this.embeddingCache = options.embeddingCache;
     this.threshold = options.threshold ?? 0.80;
+  }
+
+  public get activeModel(): string {
+    return this.defaultProvider.modelIdentifier;
+  }
+
+  /**
+   * Resolves the requested provider or falls back to default.
+   * Throws ExternalAIProviderError if requested model is unconfigured on the server.
+   */
+  public getProvider(model?: string): EmbeddingProvider {
+    if (!model) {
+      return this.defaultProvider;
+    }
+    const provider = this.providers.get(model);
+    if (!provider) {
+      if (model === this.defaultProvider.modelIdentifier) {
+        return this.defaultProvider;
+      }
+      throw new ExternalAIProviderError(
+        `Embedding provider for model "${model}" is not configured on the server.`,
+        503
+      );
+    }
+    return provider;
   }
 
   /**
@@ -66,8 +98,11 @@ export class PhraseService {
   /**
    * Retrieves embedding from cache if available; otherwise generates it via provider and saves to cache.
    */
-  private async getOrGenerateEmbedding(normalizedText: string): Promise<number[]> {
-    const cacheKey = normalizedText.toLowerCase();
+  private async getOrGenerateEmbedding(
+    normalizedText: string,
+    provider: EmbeddingProvider
+  ): Promise<number[]> {
+    const cacheKey = `${provider.modelIdentifier}:${normalizedText.toLowerCase()}`;
 
     if (this.embeddingCache) {
       const cached = await this.embeddingCache.get(cacheKey);
@@ -76,7 +111,7 @@ export class PhraseService {
       }
     }
 
-    const embedding = await this.embeddingProvider.generateEmbedding(normalizedText);
+    const embedding = await provider.generateEmbedding(normalizedText);
 
     if (this.embeddingCache) {
       await this.embeddingCache.set(cacheKey, embedding);
@@ -89,13 +124,18 @@ export class PhraseService {
    * Pre-validates a phrase against the existing catalog to detect semantic duplicates.
    *
    * @param text Raw input phrase
+   * @param model Optional target embedding model
    * @returns Validation result with isDuplicate flag, similarity score, threshold, and closest phrase
    */
-  public async validatePhrase(text: string): Promise<PhraseValidationResult> {
+  public async validatePhrase(text: string, model?: string): Promise<PhraseValidationResult> {
     const normalizedText = this.normalizeText(text);
+    const provider = this.getProvider(model);
 
-    // Step 1: Exact text short-circuit (0 AI calls)
-    const exactMatch = await this.phraseRepository.findByExactText(normalizedText);
+    // Step 1: Exact text short-circuit (0 AI calls) within active model scope
+    const exactMatch = await this.phraseRepository.findByExactText(
+      normalizedText,
+      provider.modelIdentifier
+    );
     if (exactMatch) {
       return {
         isDuplicate: true,
@@ -109,10 +149,12 @@ export class PhraseService {
     }
 
     // Step 2: Get or generate embedding
-    const embedding = await this.getOrGenerateEmbedding(normalizedText);
+    const embedding = await this.getOrGenerateEmbedding(normalizedText, provider);
 
-    // Step 3: Compare against catalog
-    const catalog = await this.phraseRepository.getAllEmbeddings();
+    // Step 3: Compare against catalog of the requested model
+    const catalog = await this.phraseRepository.getAllEmbeddings(
+      provider.modelIdentifier
+    );
     if (catalog.length === 0) {
       return {
         isDuplicate: false,
@@ -126,6 +168,10 @@ export class PhraseService {
     let closestPhrase: SimilarPhraseSummary | null = null;
 
     for (const item of catalog) {
+      // Defensive check: ignore vectors with mismatched dimensions if any exist
+      if (item.embedding.length !== embedding.length) {
+        continue;
+      }
       const score = calculateCosineSimilarity(embedding, item.embedding);
       if (score > highestScore) {
         highestScore = score;
@@ -152,16 +198,22 @@ export class PhraseService {
    *
    * @param text Raw input phrase
    * @param confirmDuplicate Whether the user confirmed saving a detected duplicate
+   * @param model Optional target embedding model
    * @returns Persisted phrase entity without embedding vector
    */
   public async createPhrase(
     text: string,
-    confirmDuplicate: boolean = false
+    confirmDuplicate: boolean = false,
+    model?: string
   ): Promise<PhraseListItem> {
     const normalizedText = this.normalizeText(text);
+    const provider = this.getProvider(model);
 
-    // Step 1: Exact text short-circuit check
-    const exactMatch = await this.phraseRepository.findByExactText(normalizedText);
+    // Step 1: Exact text short-circuit check within target model
+    const exactMatch = await this.phraseRepository.findByExactText(
+      normalizedText,
+      provider.modelIdentifier
+    );
     if (exactMatch) {
       if (!confirmDuplicate) {
         throw new DuplicatePhraseError({
@@ -178,6 +230,7 @@ export class PhraseService {
       return await this.phraseRepository.create({
         text: normalizedText,
         embedding: exactMatch.embedding,
+        embeddingModel: provider.modelIdentifier,
         similarityScore: 1.0,
         similarToId: exactMatch.id,
         validationStatus: 'CONFIRMED_DUPLICATE',
@@ -185,14 +238,19 @@ export class PhraseService {
     }
 
     // Step 2: Semantic check via embedding
-    const embedding = await this.getOrGenerateEmbedding(normalizedText);
-    const catalog = await this.phraseRepository.getAllEmbeddings();
+    const embedding = await this.getOrGenerateEmbedding(normalizedText, provider);
+    const catalog = await this.phraseRepository.getAllEmbeddings(
+      provider.modelIdentifier
+    );
 
     if (catalog.length > 0) {
       let highestScore = -1;
       let closestPhrase: SimilarPhraseSummary | null = null;
 
       for (const item of catalog) {
+        if (item.embedding.length !== embedding.length) {
+          continue;
+        }
         const score = calculateCosineSimilarity(embedding, item.embedding);
         if (score > highestScore) {
           highestScore = score;
@@ -217,6 +275,7 @@ export class PhraseService {
         return await this.phraseRepository.create({
           text: normalizedText,
           embedding,
+          embeddingModel: provider.modelIdentifier,
           similarityScore: highestScore,
           similarToId: closestPhrase!.id,
           validationStatus: 'CONFIRMED_DUPLICATE',
@@ -228,6 +287,7 @@ export class PhraseService {
     return await this.phraseRepository.create({
       text: normalizedText,
       embedding,
+      embeddingModel: provider.modelIdentifier,
       similarityScore: null,
       similarToId: null,
       validationStatus: 'UNIQUE',
@@ -235,21 +295,25 @@ export class PhraseService {
   }
 
   /**
-   * Retrieves a paginated list of phrases with deterministic ordering and optional status filtering.
+   * Retrieves a paginated list of phrases with deterministic ordering and optional status/model filtering.
+   * Defaults to filtering by the default model identifier if no specific model is requested.
    *
    * @param page Page number (1-based)
    * @param limit Number of items per page
    * @param status Optional validation status filter
+   * @param model Optional embedding model filter
    * @returns Paginated phrase list and metadata
    */
   public async listPhrases(
     page: number = 1,
     limit: number = 10,
-    status?: ValidationStatus
+    status?: ValidationStatus,
+    model?: string
   ): Promise<PaginatedPhrases> {
+    const embeddingModel = model ?? this.defaultProvider.modelIdentifier;
     const [items, total] = await Promise.all([
-      this.phraseRepository.findAll({ page, limit, status }),
-      this.phraseRepository.countAll(status),
+      this.phraseRepository.findAll({ page, limit, status, embeddingModel }),
+      this.phraseRepository.countAll(status, embeddingModel),
     ]);
 
     const totalPages = total === 0 ? 0 : Math.ceil(total / limit);

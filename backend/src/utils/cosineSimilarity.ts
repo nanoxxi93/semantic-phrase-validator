@@ -1,26 +1,25 @@
 import { InvalidVectorDimensionError } from '../errors/InvalidVectorDimensionError.js';
 
-const REQUIRED_DIMENSION = 384;
-
 /**
- * Calculates the cosine similarity between two numeric vectors of 384 dimensions.
+ * Calculates the cosine similarity between two numeric vectors of equal dimension.
  * Formula: dotProduct / (normA * normB)
  *
- * @param vecA First vector of 384 numbers
- * @param vecB Second vector of 384 numbers
+ * @param vecA First vector of numbers
+ * @param vecB Second vector of numbers
  * @returns Similarity score bounded to [0.0000, 1.0000] and rounded to 4 decimals
- * @throws InvalidVectorDimensionError if any vector does not have exactly 384 dimensions
+ * @throws InvalidVectorDimensionError if vectors have mismatched dimensions or are empty
  */
 export function calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== REQUIRED_DIMENSION || vecB.length !== REQUIRED_DIMENSION) {
-    throw new InvalidVectorDimensionError(REQUIRED_DIMENSION, vecA.length, vecB.length);
+  if (vecA.length !== vecB.length || vecA.length === 0) {
+    throw new InvalidVectorDimensionError(vecA.length, vecB.length);
   }
 
+  const dimension = vecA.length;
   let dotProduct = 0;
   let normASq = 0;
   let normBSq = 0;
 
-  for (let i = 0; i < REQUIRED_DIMENSION; i++) {
+  for (let i = 0; i < dimension; i++) {
     const a = vecA[i];
     const b = vecB[i];
 

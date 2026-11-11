@@ -1,7 +1,7 @@
 # Hoja de ruta (Roadmap)
 
 > **Versión publicada:** Ninguna  
-> **Estado actual:** Fase 4 (004-documentation-and-evidence) completada (proyecto listo para despliegue y entrega final)
+> **Estado actual:** Fase 5 (005-cloudflare-workers-ai-embeddings) en curso (refinamiento de especificación de frontend e integración)
 
 ---
 
@@ -79,7 +79,7 @@ Consolidación final del proyecto, verificación integral de calidad, arquitectu
 ## Tareas Sueltas
 
 ### En curso
-- Ninguna (Fase 4 completada exitosamente).
+- [005-cloudflare-workers-ai-embeddings](2026-11-10-005-cloudflare-workers-ai-embeddings/) — Integración de Cloudflare Workers AI con modelo BGE-M3 (`@cf/baai/bge-m3`) como proveedor de embeddings de capa gratuita, soporte para 1024 dimensiones, similitud dinámica y refinamiento de frontend.
 
 ### Completadas
 - [004-documentation-and-evidence](2026-10-21-004-documentation-and-evidence/) — Documentación integral del monorepo, guía de ejecución local, script SQL consolidado, evidencia de inferencia con Hugging Face y auditoría de cierre para el despliegue del sistema (Fase 4).

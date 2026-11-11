@@ -17,6 +17,7 @@ describe('Catalog components', () => {
     const uniquePhrase: PhraseListItem = {
       id: 'p1',
       text: 'Unique concept in test',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'UNIQUE',
       similarityScore: null,
       similarToId: null,
@@ -37,6 +38,7 @@ describe('Catalog components', () => {
     const dupPhrase: PhraseListItem = {
       id: 'p2',
       text: 'Duplicate sentence in test',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'CONFIRMED_DUPLICATE',
       similarityScore: 0.865,
       similarToId: 'orig-1',
@@ -109,6 +111,7 @@ describe('Catalog components', () => {
         {
           id: 'item-1',
           text: 'Loaded phrase',
+          embeddingModel: '@cf/baai/bge-m3',
           validationStatus: 'UNIQUE',
           similarityScore: null,
           similarToId: null,
@@ -125,5 +128,56 @@ describe('Catalog components', () => {
     expect(wrapper.text()).toContain('Loaded phrase');
     expect(wrapper.text()).toContain('Frases Registradas');
     expect(wrapper.find('span.font-mono.font-semibold').text()).toBe('1');
+  });
+
+  it('PhraseCatalog fetches catalog using the selected model prop', async () => {
+    const listSpy = vi.spyOn(phraseService, 'listPhrases').mockResolvedValue({
+      items: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    });
+
+    const wrapper = mount(PhraseCatalog, {
+      props: {
+        selectedModel: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(listSpy).toHaveBeenCalledWith(
+      1,
+      10,
+      undefined,
+      'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+    );
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+
+  it('PhraseCatalog updates catalog query when selectedModel prop changes', async () => {
+    const listSpy = vi.spyOn(phraseService, 'listPhrases').mockResolvedValue({
+      items: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    });
+
+    const wrapper = mount(PhraseCatalog, {
+      props: {
+        selectedModel: '@cf/baai/bge-m3',
+      },
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    await wrapper.setProps({
+      selectedModel: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+    });
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(listSpy).toHaveBeenLastCalledWith(
+      1,
+      10,
+      undefined,
+      'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'
+    );
   });
 });

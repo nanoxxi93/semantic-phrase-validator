@@ -377,4 +377,166 @@ describe('Phrases REST API Integration Tests', () => {
       spy.mockRestore();
     });
   });
+
+  describe('Multi-Model Cloudflare Workers AI Integration (CA-07, CA-11, CE-1, CE-2)', () => {
+    it('should support full validation and persistence with 1024-dim Cloudflare model without network (CA-11)', async () => {
+      const cfMockProvider = new MockEmbeddingProvider({
+        dimension: 1024,
+        modelIdentifier: '@cf/baai/bge-m3',
+      });
+
+      const cfApp = createApp({
+        phraseRepository: repository,
+        embeddingProvider: cfMockProvider,
+        embeddingCache: new InMemoryEmbeddingCache(),
+        similarityThreshold: 0.80,
+        disableRateLimit: true,
+      });
+
+      // 1. Validate on empty catalog
+      const valRes = await request(cfApp)
+        .post('/api/phrases/validate')
+        .send({ text: 'Nueva frase con Cloudflare BGE-M3' });
+
+      expect(valRes.status).toBe(200);
+      expect(valRes.body.data.isDuplicate).toBe(false);
+
+      // 2. Persist as unique
+      const createRes = await request(cfApp)
+        .post('/api/phrases')
+        .send({ text: 'Nueva frase con Cloudflare BGE-M3' });
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.data.text).toBe('Nueva frase con Cloudflare BGE-M3');
+      expect(createRes.body.data.embeddingModel).toBe('@cf/baai/bge-m3');
+
+      // 3. Exact duplicate check within same model
+      const dupValRes = await request(cfApp)
+        .post('/api/phrases/validate')
+        .send({ text: 'Nueva frase con Cloudflare BGE-M3' });
+
+      expect(dupValRes.status).toBe(200);
+      expect(dupValRes.body.data.isDuplicate).toBe(true);
+      expect(dupValRes.body.data.similarityScore).toBe(1.0);
+    });
+
+    it('should isolate GET /api/phrases and duplicate checks per active model (CA-07, CE-1)', async () => {
+      // 1. Create a phrase under Hugging Face model
+      await repository.create({
+        text: 'Frase persistida con Hugging Face',
+        embedding: new Array(384).fill(0.1),
+        embeddingModel: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+        similarityScore: null,
+        similarToId: null,
+        validationStatus: 'UNIQUE',
+      });
+
+      // 2. Setup app with Cloudflare model
+      const cfMockProvider = new MockEmbeddingProvider({
+        dimension: 1024,
+        modelIdentifier: '@cf/baai/bge-m3',
+      });
+
+      const cfApp = createApp({
+        phraseRepository: repository,
+        embeddingProvider: cfMockProvider,
+        embeddingCache: new InMemoryEmbeddingCache(),
+        disableRateLimit: true,
+      });
+
+      // 3. GET /api/phrases on cfApp should be empty (isolating from Hugging Face phrase)
+      const listRes = await request(cfApp).get('/api/phrases');
+      expect(listRes.status).toBe(200);
+      expect(listRes.body.data.items).toHaveLength(0);
+      expect(listRes.body.data.pagination.total).toBe(0);
+
+      // 4. Validate same text under Cloudflare - treated as unique, no 500 error or dimension mismatch
+      const valRes = await request(cfApp)
+        .post('/api/phrases/validate')
+        .send({ text: 'Frase persistida con Hugging Face' });
+
+      expect(valRes.status).toBe(200);
+      expect(valRes.body.data.isDuplicate).toBe(false);
+    });
+
+    it('should filter GET /api/phrases by explicit model query parameter (CA-13, RF-8)', async () => {
+      // 1. Create a phrase with Hugging Face
+      await repository.create({
+        text: 'Frase histórica en Hugging Face',
+        embedding: new Array(384).fill(0.1),
+        embeddingModel: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+        similarityScore: null,
+        similarToId: null,
+        validationStatus: 'UNIQUE',
+      });
+
+      // 2. Create a phrase with Cloudflare
+      await repository.create({
+        text: 'Frase histórica en Cloudflare',
+        embedding: new Array(1024).fill(0.2),
+        embeddingModel: '@cf/baai/bge-m3',
+        similarityScore: null,
+        similarToId: null,
+        validationStatus: 'UNIQUE',
+      });
+
+      // 3. Query explicitly for Hugging Face
+      const hfRes = await request(app)
+        .get('/api/phrases')
+        .query({ model: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2' });
+
+      expect(hfRes.status).toBe(200);
+      expect(hfRes.body.data.items).toHaveLength(1);
+      expect(hfRes.body.data.items[0].text).toBe('Frase histórica en Hugging Face');
+
+      // 4. Query explicitly for Cloudflare
+      const cfRes = await request(app)
+        .get('/api/phrases')
+        .query({ model: '@cf/baai/bge-m3' });
+
+      expect(cfRes.status).toBe(200);
+      expect(cfRes.body.data.items).toHaveLength(1);
+      expect(cfRes.body.data.items[0].text).toBe('Frase histórica en Cloudflare');
+
+      // 5. Query with unapproved/malicious model should return 400 Bad Request
+      const invalidRes = await request(app)
+        .get('/api/phrases')
+        .query({ model: 'unauthorized-model-v1' });
+
+      expect(invalidRes.status).toBe(400);
+      expect(invalidRes.body.success).toBe(false);
+      expect(invalidRes.body.error.code).toBe('BAD_REQUEST');
+
+      // 6. Validate with unapproved model should return 400 Bad Request
+      const invalidValidateRes = await request(app)
+        .post('/api/phrases/validate')
+        .send({ text: 'Validar con modelo no permitido', model: 'unauthorized-model-v1' });
+
+      expect(invalidValidateRes.status).toBe(400);
+      expect(invalidValidateRes.body.success).toBe(false);
+      expect(invalidValidateRes.body.error.code).toBe('BAD_REQUEST');
+
+      // 7. Create with unapproved model should return 400 Bad Request
+      const invalidCreateRes = await request(app)
+        .post('/api/phrases')
+        .send({ text: 'Crear con modelo no permitido', model: 'unauthorized-model-v1' });
+
+      expect(invalidCreateRes.status).toBe(400);
+      expect(invalidCreateRes.body.success).toBe(false);
+      expect(invalidCreateRes.body.error.code).toBe('BAD_REQUEST');
+    });
+
+    it('should return active model metadata via GET /api/model (CA-12, RF-7)', async () => {
+      const response = await request(app).get('/api/model');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toMatchObject({
+        provider: expect.any(String),
+        modelIdentifier: expect.any(String),
+        dimension: expect.any(Number),
+        threshold: 0.8,
+      });
+    });
+  });
 });

@@ -81,7 +81,7 @@ export const usePhraseValidation = () => {
     }
   };
 
-  const validatePhrase = async (): Promise<void> => {
+  const validatePhrase = async (model?: string): Promise<void> => {
     if (!canSubmit.value) return;
 
     uiState.value = 'VALIDATING';
@@ -89,7 +89,7 @@ export const usePhraseValidation = () => {
     startSkeletonTimer();
 
     try {
-      const result = await phraseService.validatePhrase(phraseText.value.trim());
+      const result = await phraseService.validatePhrase(phraseText.value.trim(), model);
       clearSkeletonTimer();
       validationResult.value = result;
 
@@ -113,7 +113,8 @@ export const usePhraseValidation = () => {
   };
 
   const savePhrase = async (
-    onSuccess?: (created: PhraseListItem) => void
+    onSuccess?: (created: PhraseListItem) => void,
+    model?: string
   ): Promise<PhraseListItem | undefined> => {
     if (!canSubmit.value) return undefined;
 
@@ -121,7 +122,7 @@ export const usePhraseValidation = () => {
     errorState.value = null;
 
     try {
-      const created = await phraseService.createPhrase(phraseText.value.trim(), false);
+      const created = await phraseService.createPhrase(phraseText.value.trim(), false, model);
       reset();
       onSuccess?.(created);
       return created;
@@ -147,7 +148,8 @@ export const usePhraseValidation = () => {
   };
 
   const confirmDuplicateSave = async (
-    onSuccess?: (created: PhraseListItem) => void
+    onSuccess?: (created: PhraseListItem) => void,
+    model?: string
   ): Promise<PhraseListItem | undefined> => {
     if (uiState.value !== 'DUPLICATE_WARNING' || isLoading.value) return undefined;
 
@@ -155,7 +157,7 @@ export const usePhraseValidation = () => {
     errorState.value = null;
 
     try {
-      const created = await phraseService.createPhrase(phraseText.value.trim(), true);
+      const created = await phraseService.createPhrase(phraseText.value.trim(), true, model);
       reset();
       onSuccess?.(created);
       return created;

@@ -3,43 +3,46 @@ import type {
   PhraseValidationResult,
   PaginatedPhrases,
   HealthCheckData,
+  ActiveModelInfo,
 } from '../types/api.js';
 import type { PhraseListItem, ValidationStatus } from '../types/phrase.js';
 
 export const phraseService = {
   /**
    * Pre-validates a phrase for semantic duplicate without persisting.
-   * Calls POST /api/phrases/validate
+   * Calls POST /api/phrases/validate with optional target model.
    */
-  async validatePhrase(text: string): Promise<PhraseValidationResult> {
+  async validatePhrase(text: string, model?: string): Promise<PhraseValidationResult> {
     return request<PhraseValidationResult>('/phrases/validate', {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, model }),
     });
   },
 
   /**
    * Persists a phrase as UNIQUE or CONFIRMED_DUPLICATE.
-   * Calls POST /api/phrases
+   * Calls POST /api/phrases with optional target model.
    */
   async createPhrase(
     text: string,
-    confirmDuplicate: boolean = false
+    confirmDuplicate: boolean = false,
+    model?: string
   ): Promise<PhraseListItem> {
     return request<PhraseListItem>('/phrases', {
       method: 'POST',
-      body: JSON.stringify({ text, confirmDuplicate }),
+      body: JSON.stringify({ text, confirmDuplicate, model }),
     });
   },
 
   /**
-   * Retrieves paginated list of catalog phrases.
-   * Calls GET /api/phrases?page={page}&limit={limit}&status={status}
+   * Retrieves paginated list of catalog phrases with optional status and model filter.
+   * Calls GET /api/phrases?page={page}&limit={limit}&status={status}&model={model}
    */
   async listPhrases(
     page: number = 1,
     limit: number = 10,
-    status?: ValidationStatus
+    status?: ValidationStatus,
+    model?: string
   ): Promise<PaginatedPhrases> {
     const params = new URLSearchParams({
       page: String(page),
@@ -50,7 +53,19 @@ export const phraseService = {
       params.append('status', status);
     }
 
+    if (model) {
+      params.append('model', model);
+    }
+
     return request<PaginatedPhrases>(`/phrases?${params.toString()}`);
+  },
+
+  /**
+   * Retrieves active model configuration and threshold from the backend.
+   * Calls GET /api/model
+   */
+  async getActiveModel(): Promise<ActiveModelInfo> {
+    return request<ActiveModelInfo>('/model');
   },
 
   /**

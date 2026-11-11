@@ -142,6 +142,7 @@ describe('PhraseForm component', () => {
     const mockCreated = {
       id: 'saved-id',
       text: 'Phrase to be saved',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'UNIQUE' as const,
       similarityScore: null,
       similarToId: null,
@@ -163,5 +164,48 @@ describe('PhraseForm component', () => {
     expect(wrapper.emitted('phrase-saved')).toBeTruthy();
     expect(wrapper.emitted('phrase-saved')?.[0]).toEqual([mockCreated]);
     expect((textarea.element as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('passes selectedModel prop to phraseService.validatePhrase and phraseService.createPhrase', async () => {
+    const valSpy = vi.spyOn(phraseService, 'validatePhrase').mockResolvedValueOnce({
+      isDuplicate: false,
+      similarityScore: 0.1,
+      threshold: 0.8,
+      similarPhrase: null,
+    });
+
+    const createSpy = vi.spyOn(phraseService, 'createPhrase').mockResolvedValueOnce({
+      id: 'saved-cf',
+      text: 'Phrase for CF',
+      embeddingModel: '@cf/baai/bge-m3',
+      validationStatus: 'UNIQUE' as const,
+      similarityScore: null,
+      similarToId: null,
+      similarPhrase: null,
+      createdAt: new Date().toISOString(),
+    });
+
+    const wrapper = mount(PhraseForm, {
+      props: {
+        selectedModel: '@cf/baai/bge-m3',
+      },
+    });
+
+    const textarea = wrapper.find('textarea#phrase-input');
+    await textarea.setValue('Phrase for CF');
+
+    // Click validate
+    const validateBtn = wrapper.findAll('button')[0];
+    await validateBtn.trigger('click');
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(valSpy).toHaveBeenCalledWith('Phrase for CF', '@cf/baai/bge-m3');
+
+    // Click save
+    const saveBtn = wrapper.findAll('button')[1];
+    await saveBtn.trigger('click');
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(createSpy).toHaveBeenCalledWith('Phrase for CF', false, '@cf/baai/bge-m3');
   });
 });

@@ -39,3 +39,10 @@ export interface HealthCheckData {
   status: string;
   timestamp: string;
 }
+
+export interface ActiveModelInfo {
+  provider: 'cloudflare' | 'huggingface';
+  modelIdentifier: string;
+  dimension: number;
+  threshold: number;
+}

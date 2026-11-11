@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SimilarPhraseSummary } from '../types/phrase.js';
+import { getModelMeta } from '../constants/models.js';
 
 const props = withDefaults(
   defineProps<{
     similarityScore?: number | null;
     threshold?: number;
     similarPhrase?: SimilarPhraseSummary | null;
+    modelId?: string;
     isLoading?: boolean;
     showActions?: boolean;
   }>(),
@@ -14,6 +16,7 @@ const props = withDefaults(
     similarityScore: null,
     threshold: 0.8,
     similarPhrase: null,
+    modelId: undefined,
     isLoading: false,
     showActions: true,
   }
@@ -31,6 +34,11 @@ const scoreFormatted = computed(() => {
 
 const thresholdPercentage = computed(() => {
   return `${(props.threshold * 100).toFixed(0)}%`;
+});
+
+const modelBadge = computed(() => {
+  if (!props.modelId) return null;
+  return getModelMeta(props.modelId).shortLabel;
 });
 </script>
 
@@ -54,6 +62,12 @@ const thresholdPercentage = computed(() => {
             <h3 class="text-sm font-bold text-amber-950">
               Posible frase duplicada detectada
             </h3>
+            <span
+              v-if="modelBadge"
+              class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-amber-200/80 text-amber-900 border border-amber-300"
+            >
+              {{ modelBadge }}
+            </span>
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-200 text-amber-950 border border-amber-300">
               Similitud: {{ scoreFormatted }} (Umbral: {{ thresholdPercentage }})
             </span>
@@ -105,11 +119,8 @@ const thresholdPercentage = computed(() => {
             type="button"
             :disabled="isLoading"
             @click="$emit('cancel')"
-            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition cursor-pointer disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs transition cursor-pointer disabled:opacity-50"
           >
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
             <span>Cancelar</span>
           </button>
         </div>

@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import { usePhraseCatalog } from '../composables/usePhraseCatalog.js';
+import { DEFAULT_MODEL_ID } from '../constants/models.js';
 import PhraseFilterBar from './PhraseFilterBar.vue';
 import PhraseList from './PhraseList.vue';
 import PaginationBar from './PaginationBar.vue';
+
+const props = withDefaults(
+  defineProps<{
+    selectedModel?: string;
+    activeModelId?: string;
+  }>(),
+  {
+    selectedModel: DEFAULT_MODEL_ID,
+    activeModelId: DEFAULT_MODEL_ID,
+  }
+);
 
 const {
   phrases,
@@ -13,9 +25,19 @@ const {
   errorState,
   fetchCatalog,
   setFilter,
+  setSelectedModel,
   changePage,
   onPhraseCreated,
-} = usePhraseCatalog();
+} = usePhraseCatalog(props.selectedModel);
+
+watch(
+  () => props.selectedModel,
+  (newModel) => {
+    if (newModel) {
+      setSelectedModel(newModel);
+    }
+  }
+);
 
 onMounted(() => {
   fetchCatalog();

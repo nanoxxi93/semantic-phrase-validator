@@ -5,6 +5,7 @@ import { ExternalAIProviderError } from '../errors/ExternalAIProviderError.js';
 import { InvalidEmbeddingResponseError } from '../errors/InvalidEmbeddingResponseError.js';
 
 export class HuggingFaceEmbeddingProvider implements EmbeddingProvider {
+  public readonly modelIdentifier: string;
   private readonly hf: HfInference;
   private readonly model: string;
   private static readonly EXPECTED_DIMENSION = 384;
@@ -17,6 +18,7 @@ export class HuggingFaceEmbeddingProvider implements EmbeddingProvider {
   ) {
     this.hf = client ?? new HfInference(token);
     this.model = model;
+    this.modelIdentifier = model;
   }
 
   public async generateEmbedding(text: string): Promise<number[]> {

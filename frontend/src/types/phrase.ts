@@ -8,6 +8,7 @@ export interface SimilarPhraseSummary {
 export interface PhraseListItem {
   id: string;
   text: string;
+  embeddingModel: string;
   validationStatus: ValidationStatus;
   similarityScore: number | null;
   similarToId: string | null;

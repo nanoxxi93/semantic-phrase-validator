@@ -8,6 +8,21 @@ Categorías: **Añadido** (algo nuevo) · **Cambiado** (algo existente se compor
 
 ## [Sin publicar]
 
+### 2026-11-10
+
+#### Añadido
+- Integración completa de Cloudflare Workers AI con modelo BGE-M3 (`@cf/baai/bge-m3`) como proveedor de inferencia de embeddings en capa gratuita ([spec](specs/2026-11-10-005-cloudflare-workers-ai-embeddings/spec.md)):
+  - Clase `CloudflareEmbeddingProvider` con soporte para timeout de 8000 ms, reintentos defensivos ante HTTP 429/500/503 y compatibilidad con Cloudflare AI Gateway.
+  - Script de validación de inferencia en caliente `npm run test:cf` (`backend/src/scripts/testCloudflareAI.ts`) con calibración de umbral y tiempos de respuesta.
+  - Columna `embedding_model` e índice compuesto en PostgreSQL con migración Drizzle `0002_flawless_morph.sql` y script `scripts/schema.sql`.
+  - Configuración dinámica con Zod en `env.ts` para alternar entre `cloudflare` y `huggingface`.
+- Especificación formal para la integración de Cloudflare Workers AI con modelo BGE-M3 (`@cf/baai/bge-m3`) como alternativa de capa gratuita a Hugging Face ([spec](specs/2026-11-10-005-cloudflare-workers-ai-embeddings/spec.md)).
+
+#### Cambiado
+- Generalización de la función matemática pura `calculateCosineSimilarity` para soportar dimensiones arbitrarias ($N > 0$) como 384d y 1024d.
+- Aislamiento estricto de catálogo y detección de duplicados en `PhraseService` y `PhraseRepository` restringidos al modelo activo (`embedding_model`), evitando contaminación de espacios vectoriales incompatibles.
+- Refinamiento de la especificación `005-cloudflare-workers-ai-embeddings` incorporando columna `embedding_model`, filtrado de catálogo en `GET /api/phrases` y supresión de fallback automático ([spec](specs/2026-11-10-005-cloudflare-workers-ai-embeddings/spec.md)).
+
 ### 2026-10-22
 
 #### Añadido

@@ -1,4 +1,4 @@
-import { eq, desc, count, sql } from 'drizzle-orm';
+import { eq, desc, count, sql, and } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '../db/index.js';
 import { phrases } from '../db/schema.js';
@@ -21,6 +21,7 @@ export class PhraseRepository implements PhraseRepositoryInterface {
       .values({
         text: data.text,
         embedding: data.embedding,
+        embeddingModel: data.embeddingModel,
         similarityScore: data.similarityScore !== null ? data.similarityScore.toFixed(4) : null,
         similarToId: data.similarToId,
         validationStatus: data.validationStatus,
@@ -41,6 +42,7 @@ export class PhraseRepository implements PhraseRepositoryInterface {
     return {
       id: inserted.id,
       text: inserted.text,
+      embeddingModel: inserted.embeddingModel,
       validationStatus: inserted.validationStatus,
       similarityScore: inserted.similarityScore !== null ? Number(inserted.similarityScore) : null,
       similarToId: inserted.similarToId,
@@ -50,15 +52,25 @@ export class PhraseRepository implements PhraseRepositoryInterface {
   }
 
   async findAll(options: FindAllOptions): Promise<PhraseListItem[]> {
-    const { page, limit, status } = options;
+    const { page, limit, status, embeddingModel } = options;
     const offset = (page - 1) * limit;
     const similarPhrases = alias(phrases, 'similar_phrase');
-    const whereClause = status ? eq(phrases.validationStatus, status) : undefined;
+
+    const conditions = [];
+    if (status) {
+      conditions.push(eq(phrases.validationStatus, status));
+    }
+    if (embeddingModel) {
+      conditions.push(eq(phrases.embeddingModel, embeddingModel));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const rows = await this.database
       .select({
         id: phrases.id,
         text: phrases.text,
+        embeddingModel: phrases.embeddingModel,
         validationStatus: phrases.validationStatus,
         similarityScore: phrases.similarityScore,
         similarToId: phrases.similarToId,
@@ -76,6 +88,7 @@ export class PhraseRepository implements PhraseRepositoryInterface {
     return rows.map((r) => ({
       id: r.id,
       text: r.text,
+      embeddingModel: r.embeddingModel,
       validationStatus: r.validationStatus,
       similarityScore: r.similarityScore !== null ? Number(r.similarityScore) : null,
       similarToId: r.similarToId,
@@ -84,8 +97,16 @@ export class PhraseRepository implements PhraseRepositoryInterface {
     }));
   }
 
-  async countAll(status?: ValidationStatus): Promise<number> {
-    const whereClause = status ? eq(phrases.validationStatus, status) : undefined;
+  async countAll(status?: ValidationStatus, embeddingModel?: string): Promise<number> {
+    const conditions = [];
+    if (status) {
+      conditions.push(eq(phrases.validationStatus, status));
+    }
+    if (embeddingModel) {
+      conditions.push(eq(phrases.embeddingModel, embeddingModel));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [result] = await this.database
       .select({ total: count() })
@@ -95,29 +116,38 @@ export class PhraseRepository implements PhraseRepositoryInterface {
     return Number(result?.total ?? 0);
   }
 
-  async getAllEmbeddings(): Promise<PhraseWithEmbedding[]> {
+  async getAllEmbeddings(embeddingModel?: string): Promise<PhraseWithEmbedding[]> {
+    const whereClause = embeddingModel ? eq(phrases.embeddingModel, embeddingModel) : undefined;
+
     const rows = await this.database
       .select({
         id: phrases.id,
         text: phrases.text,
         embedding: phrases.embedding,
+        embeddingModel: phrases.embeddingModel,
       })
-      .from(phrases);
+      .from(phrases)
+      .where(whereClause);
 
     return rows;
   }
 
-  async findByExactText(normalizedText: string): Promise<PhraseWithEmbedding | null> {
+  async findByExactText(normalizedText: string, embeddingModel?: string): Promise<PhraseWithEmbedding | null> {
     const cleanText = normalizedText.trim().replace(/\s+/g, ' ');
+    const conditions = [sql`LOWER(${phrases.text}) = LOWER(${cleanText})`];
+    if (embeddingModel) {
+      conditions.push(eq(phrases.embeddingModel, embeddingModel));
+    }
 
     const [found] = await this.database
       .select({
         id: phrases.id,
         text: phrases.text,
         embedding: phrases.embedding,
+        embeddingModel: phrases.embeddingModel,
       })
       .from(phrases)
-      .where(sql`LOWER(${phrases.text}) = LOWER(${cleanText})`)
+      .where(and(...conditions))
       .limit(1);
 
     return found ?? null;

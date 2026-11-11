@@ -3,71 +3,91 @@ import { calculateCosineSimilarity } from '../../src/utils/cosineSimilarity.js';
 import { InvalidVectorDimensionError } from '../../src/errors/InvalidVectorDimensionError.js';
 
 describe('calculateCosineSimilarity (Unit Tests)', () => {
-  const DIMENSION = 384;
-
-  const createVector = (fillValue: number = 0): number[] => {
-    return new Array(DIMENSION).fill(fillValue);
+  const createVector = (dim: number, fillValue: number = 0): number[] => {
+    return new Array(dim).fill(fillValue);
   };
 
-  it('CA-01: should return exactly 1.0000 for identical non-null vectors', () => {
-    const vecA = createVector(0.5);
-    const vecB = createVector(0.5);
+  describe('384-dimensional vectors', () => {
+    it('CA-01: should return exactly 1.0000 for identical non-null vectors', () => {
+      const vecA = createVector(384, 0.5);
+      const vecB = createVector(384, 0.5);
 
-    const similarity = calculateCosineSimilarity(vecA, vecB);
-    expect(similarity).toBe(1.0);
-    expect(similarity.toFixed(4)).toBe('1.0000');
+      const similarity = calculateCosineSimilarity(vecA, vecB);
+      expect(similarity).toBe(1.0);
+      expect(similarity.toFixed(4)).toBe('1.0000');
+    });
+
+    it('CA-02: should return exactly 0.0000 for orthogonal vectors', () => {
+      const vecA = createVector(384, 0);
+      const vecB = createVector(384, 0);
+      vecA[0] = 1;
+      vecB[1] = 1;
+
+      const similarity = calculateCosineSimilarity(vecA, vecB);
+      expect(similarity).toBe(0.0);
+      expect(similarity.toFixed(4)).toBe('0.0000');
+    });
   });
 
-  it('CA-02: should return exactly 0.0000 for orthogonal vectors', () => {
-    const vecA = createVector(0);
-    const vecB = createVector(0);
-    vecA[0] = 1;
-    vecB[1] = 1;
+  describe('1024-dimensional vectors (Cloudflare BGE-M3)', () => {
+    it('CA-01: should return exactly 1.0000 for identical 1024-dim vectors', () => {
+      const vecA = createVector(1024, 0.25);
+      const vecB = createVector(1024, 0.25);
 
-    const similarity = calculateCosineSimilarity(vecA, vecB);
-    expect(similarity).toBe(0.0);
-    expect(similarity.toFixed(4)).toBe('0.0000');
+      const similarity = calculateCosineSimilarity(vecA, vecB);
+      expect(similarity).toBe(1.0);
+      expect(similarity.toFixed(4)).toBe('1.0000');
+    });
+
+    it('CA-02: should return exactly 0.0000 for orthogonal 1024-dim vectors', () => {
+      const vecA = createVector(1024, 0);
+      const vecB = createVector(1024, 0);
+      vecA[100] = 1;
+      vecB[500] = 1;
+
+      const similarity = calculateCosineSimilarity(vecA, vecB);
+      expect(similarity).toBe(0.0);
+      expect(similarity.toFixed(4)).toBe('0.0000');
+    });
+
+    it('CA-05: should bound results to [0.0000, 1.0000] and round to 4 decimals', () => {
+      const vecA = createVector(1024, 0.05);
+      const vecB = createVector(1024, 0.05);
+      vecA[0] = 0.88;
+      vecB[1] = 0.44;
+
+      const similarity = calculateCosineSimilarity(vecA, vecB);
+      expect(similarity).toBeGreaterThanOrEqual(0.0);
+      expect(similarity).toBeLessThanOrEqual(1.0);
+      const decimalPlaces = (similarity.toString().split('.')[1] || '').length;
+      expect(decimalPlaces).toBeLessThanOrEqual(4);
+    });
   });
 
-  it('CA-05: should bound results to [0.0000, 1.0000] and round to 4 decimals', () => {
-    const vecA = createVector(0.1);
-    const vecB = createVector(0.1);
-    // slightly perturb to create non-trivial cosine
-    vecA[0] = 0.99;
-    vecB[1] = 0.55;
+  describe('Edge cases and error handling', () => {
+    it('CE-1: should throw InvalidVectorDimensionError for mismatched lengths (e.g. 1024 vs 384)', () => {
+      const vec1024 = createVector(1024, 1);
+      const vec384 = createVector(384, 1);
 
-    const similarity = calculateCosineSimilarity(vecA, vecB);
-    expect(similarity).toBeGreaterThanOrEqual(0.0);
-    expect(similarity).toBeLessThanOrEqual(1.0);
-    // check that it has at most 4 decimal places
-    const decimalPlaces = (similarity.toString().split('.')[1] || '').length;
-    expect(decimalPlaces).toBeLessThanOrEqual(4);
-  });
+      expect(() => calculateCosineSimilarity(vec1024, vec384)).toThrow(InvalidVectorDimensionError);
+      expect(() => calculateCosineSimilarity(vec384, vec1024)).toThrow(InvalidVectorDimensionError);
+    });
 
-  it('CE-1: should throw InvalidVectorDimensionError for empty vectors or mismatched lengths', () => {
-    const emptyVec: number[] = [];
-    const validVec = createVector(1);
-    const shortVec = new Array(128).fill(1);
+    it('CE-1: should throw InvalidVectorDimensionError for empty vectors', () => {
+      const emptyVec: number[] = [];
+      const validVec = createVector(384, 1);
 
-    expect(() => calculateCosineSimilarity(emptyVec, validVec)).toThrow(InvalidVectorDimensionError);
-    expect(() => calculateCosineSimilarity(validVec, shortVec)).toThrow(InvalidVectorDimensionError);
-    expect(() => calculateCosineSimilarity(emptyVec, emptyVec)).toThrow(InvalidVectorDimensionError);
-  });
+      expect(() => calculateCosineSimilarity(emptyVec, validVec)).toThrow(InvalidVectorDimensionError);
+      expect(() => calculateCosineSimilarity(emptyVec, emptyVec)).toThrow(InvalidVectorDimensionError);
+    });
 
-  it('CE-2: should safely return 0.0000 without NaN/Infinity when any vector has zero magnitude', () => {
-    const zeroVec = createVector(0);
-    const nonZeroVec = createVector(1);
+    it('CE-2: should safely return 0.0000 without NaN/Infinity when magnitude is zero', () => {
+      const zeroVec = createVector(1024, 0);
+      const nonZeroVec = createVector(1024, 1);
 
-    const similarity1 = calculateCosineSimilarity(zeroVec, nonZeroVec);
-    expect(similarity1).toBe(0.0);
-    expect(Number.isNaN(similarity1)).toBe(false);
-
-    const similarity2 = calculateCosineSimilarity(nonZeroVec, zeroVec);
-    expect(similarity2).toBe(0.0);
-    expect(Number.isNaN(similarity2)).toBe(false);
-
-    const similarity3 = calculateCosineSimilarity(zeroVec, zeroVec);
-    expect(similarity3).toBe(0.0);
-    expect(Number.isNaN(similarity3)).toBe(false);
+      expect(calculateCosineSimilarity(zeroVec, nonZeroVec)).toBe(0.0);
+      expect(calculateCosineSimilarity(nonZeroVec, zeroVec)).toBe(0.0);
+      expect(calculateCosineSimilarity(zeroVec, zeroVec)).toBe(0.0);
+    });
   });
 });

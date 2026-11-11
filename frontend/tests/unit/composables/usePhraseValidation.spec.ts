@@ -100,6 +100,7 @@ describe('usePhraseValidation', () => {
     const mockCreated = {
       id: 'uuid-1',
       text: 'Direct save phrase',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'UNIQUE' as const,
       similarityScore: null,
       similarToId: null,
@@ -152,6 +153,7 @@ describe('usePhraseValidation', () => {
     const mockConfirmed = {
       id: 'uuid-dup',
       text: 'Confirmed duplicate text',
+      embeddingModel: '@cf/baai/bge-m3',
       validationStatus: 'CONFIRMED_DUPLICATE' as const,
       similarityScore: 0.88,
       similarToId: 'orig-id',
@@ -205,5 +207,40 @@ describe('usePhraseValidation', () => {
     expect(errorState.value?.statusCode).toBe(503);
     expect(phraseText.value).toBe('Text attempting validation');
     expect(canSubmit.value).toBe(true);
+  });
+
+  it('propagates model argument to phraseService in validatePhrase, savePhrase, and confirmDuplicateSave', async () => {
+    const valSpy = vi.spyOn(phraseService, 'validatePhrase').mockResolvedValueOnce({
+      isDuplicate: false,
+      similarityScore: 0.1,
+      threshold: 0.8,
+      similarPhrase: null,
+    });
+    const createSpy = vi.spyOn(phraseService, 'createPhrase').mockResolvedValue({
+      id: 'id-1',
+      text: 'Propagate model',
+      embeddingModel: '@cf/baai/bge-m3',
+      validationStatus: 'UNIQUE' as const,
+      similarityScore: null,
+      similarToId: null,
+      similarPhrase: null,
+      createdAt: new Date().toISOString(),
+    });
+
+    const { phraseText, validatePhrase, savePhrase, confirmDuplicateSave, uiState } =
+      usePhraseValidation();
+
+    phraseText.value = 'Propagate model';
+    await validatePhrase('@cf/baai/bge-m3');
+    expect(valSpy).toHaveBeenCalledWith('Propagate model', '@cf/baai/bge-m3');
+
+    phraseText.value = 'Propagate model';
+    await savePhrase(undefined, '@cf/baai/bge-m3');
+    expect(createSpy).toHaveBeenCalledWith('Propagate model', false, '@cf/baai/bge-m3');
+
+    uiState.value = 'DUPLICATE_WARNING';
+    phraseText.value = 'Propagate duplicate';
+    await confirmDuplicateSave(undefined, '@cf/baai/bge-m3');
+    expect(createSpy).toHaveBeenCalledWith('Propagate duplicate', true, '@cf/baai/bge-m3');
   });
 });

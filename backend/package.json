@@ -11,6 +11,7 @@
     "test:all": "vitest run",
     "test:watch": "vitest",
     "test:hf": "tsx src/scripts/testHuggingFace.ts",
+    "test:cf": "tsx src/scripts/testCloudflareAI.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "dev": "tsx watch src/index.ts",

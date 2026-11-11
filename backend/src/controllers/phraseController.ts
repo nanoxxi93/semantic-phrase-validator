@@ -19,8 +19,8 @@ export class PhraseController {
    */
   public validate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { text } = validatePhraseSchema.parse(req.body);
-      const result = await this.phraseService.validatePhrase(text);
+      const { text, model } = validatePhraseSchema.parse(req.body);
+      const result = await this.phraseService.validatePhrase(text, model);
 
       res.status(200).json({
         success: true,
@@ -37,8 +37,8 @@ export class PhraseController {
    */
   public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { text, confirmDuplicate } = createPhraseSchema.parse(req.body);
-      const result = await this.phraseService.createPhrase(text, confirmDuplicate);
+      const { text, confirmDuplicate, model } = createPhraseSchema.parse(req.body);
+      const result = await this.phraseService.createPhrase(text, confirmDuplicate, model);
 
       res.status(201).json({
         success: true,
@@ -55,8 +55,8 @@ export class PhraseController {
    */
   public list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { page, limit, status } = listPhrasesQuerySchema.parse(req.query);
-      const result = await this.phraseService.listPhrases(page, limit, status);
+      const { page, limit, status, model } = listPhrasesQuerySchema.parse(req.query);
+      const result = await this.phraseService.listPhrases(page, limit, status, model);
 
       res.status(200).json({
         success: true,

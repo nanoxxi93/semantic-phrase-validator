@@ -21,19 +21,19 @@ describe('phraseService and api client', () => {
       json: async () => ({ success: true, data: mockData }),
     } as Response);
 
-    const result = await phraseService.validatePhrase('Test phrase');
+    const result = await phraseService.validatePhrase('Test phrase', '@cf/baai/bge-m3');
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/phrases/validate'),
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ text: 'Test phrase' }),
+        body: JSON.stringify({ text: 'Test phrase', model: '@cf/baai/bge-m3' }),
       })
     );
     expect(result).toEqual(mockData);
   });
 
-  it('createPhrase calls POST /phrases with text and confirmDuplicate', async () => {
+  it('createPhrase calls POST /phrases with text, confirmDuplicate, and model', async () => {
     const mockCreated = {
       id: 'uuid-1',
       text: 'Unique sentence',
@@ -50,13 +50,13 @@ describe('phraseService and api client', () => {
       json: async () => ({ success: true, data: mockCreated }),
     } as Response);
 
-    const result = await phraseService.createPhrase('Unique sentence', true);
+    const result = await phraseService.createPhrase('Unique sentence', true, '@cf/baai/bge-m3');
 
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/phrases'),
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ text: 'Unique sentence', confirmDuplicate: true }),
+        body: JSON.stringify({ text: 'Unique sentence', confirmDuplicate: true, model: '@cf/baai/bge-m3' }),
       })
     );
     expect(result).toEqual(mockCreated);
@@ -99,6 +99,50 @@ describe('phraseService and api client', () => {
       expect.any(Object)
     );
     expect(result).toEqual(mockHealth);
+  });
+
+  it('getActiveModel calls GET /model and returns active model metadata (CA-12, RF-7)', async () => {
+    const mockModelInfo = {
+      provider: 'cloudflare' as const,
+      modelIdentifier: '@cf/baai/bge-m3',
+      dimension: 1024,
+      threshold: 0.8,
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: mockModelInfo }),
+    } as Response);
+
+    const result = await phraseService.getActiveModel();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/model'),
+      expect.any(Object)
+    );
+    expect(result).toEqual(mockModelInfo);
+  });
+
+  it('listPhrases appends model query parameter when provided (CA-13, RF-8)', async () => {
+    const mockCatalog = {
+      items: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: mockCatalog }),
+    } as Response);
+
+    const result = await phraseService.listPhrases(1, 10, undefined, '@cf/baai/bge-m3');
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringContaining('/phrases?page=1&limit=10&model=%40cf%2Fbaai%2Fbge-m3'),
+      expect.any(Object)
+    );
+    expect(result).toEqual(mockCatalog);
   });
 
   it('throws ApiClientError with backend error response details on failure', async () => {

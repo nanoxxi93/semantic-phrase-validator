@@ -8,6 +8,7 @@ export interface SimilarPhraseSummary {
 export interface PhraseListItem {
   id: string;
   text: string;
+  embeddingModel: string;
   validationStatus: ValidationStatus;
   similarityScore: number | null;
   similarToId: string | null;
@@ -19,17 +20,20 @@ export interface PhraseWithEmbedding {
   id: string;
   text: string;
   embedding: number[];
+  embeddingModel: string;
 }
 
 export interface FindAllOptions {
   page: number;
   limit: number;
   status?: ValidationStatus;
+  embeddingModel?: string;
 }
 
 export interface CreatePhraseData {
   text: string;
   embedding: number[];
+  embeddingModel: string;
   similarityScore: number | null;
   similarToId: string | null;
   validationStatus: ValidationStatus;
@@ -38,7 +42,7 @@ export interface CreatePhraseData {
 export interface PhraseRepositoryInterface {
   create(data: CreatePhraseData): Promise<PhraseListItem>;
   findAll(options: FindAllOptions): Promise<PhraseListItem[]>;
-  countAll(status?: ValidationStatus): Promise<number>;
-  getAllEmbeddings(): Promise<PhraseWithEmbedding[]>;
-  findByExactText(normalizedText: string): Promise<PhraseWithEmbedding | null>;
+  countAll(status?: ValidationStatus, embeddingModel?: string): Promise<number>;
+  getAllEmbeddings(embeddingModel?: string): Promise<PhraseWithEmbedding[]>;
+  findByExactText(normalizedText: string, embeddingModel?: string): Promise<PhraseWithEmbedding | null>;
 }

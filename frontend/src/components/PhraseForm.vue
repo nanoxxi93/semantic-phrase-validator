@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { usePhraseValidation } from '../composables/usePhraseValidation.js';
 import ValidationResultCard from './ValidationResultCard.vue';
 import DuplicateAlertCard from './DuplicateAlertCard.vue';
 import ErrorAlertBanner from './ErrorAlertBanner.vue';
 import type { PhraseListItem } from '../types/phrase.js';
 
+const props = defineProps<{
+  selectedModel?: string;
+  activeModelId?: string;
+}>();
+
 const emit = defineEmits<{
   (e: 'phrase-saved', phrase: PhraseListItem): void;
 }>();
+
+const currentModel = computed(() => props.selectedModel ?? props.activeModelId);
 
 const {
   phraseText,
@@ -26,16 +34,20 @@ const {
   cancelDuplicate,
 } = usePhraseValidation();
 
+const onValidate = async () => {
+  await validatePhrase(currentModel.value);
+};
+
 const onDirectSave = async () => {
   await savePhrase((created) => {
     emit('phrase-saved', created);
-  });
+  }, currentModel.value);
 };
 
 const onConfirmDuplicate = async () => {
   await confirmDuplicateSave((created) => {
     emit('phrase-saved', created);
-  });
+  }, currentModel.value);
 };
 </script>
 
@@ -85,7 +97,7 @@ const onConfirmDuplicate = async () => {
           <div class="text-xs sm:text-sm">
             <p class="font-semibold text-indigo-950">Analizando significado semántico...</p>
             <p class="text-indigo-700 mt-0.5">
-              Generando vector de 384 dimensiones y calculando similitud coseno contra el catálogo.
+              Generando vector de embedding y calculando similitud coseno contra el catálogo.
             </p>
           </div>
         </div>
@@ -97,6 +109,7 @@ const onConfirmDuplicate = async () => {
         :similarity-score="validationResult?.similarityScore"
         :threshold="validationResult?.threshold"
         :similar-phrase="validationResult?.similarPhrase"
+        :model-id="currentModel"
       />
 
       <!-- 3. DUPLICATE_INFORMATIVE (o durante validación/guardado previo sin alterar estabilidad de pantalla) -->
@@ -105,6 +118,7 @@ const onConfirmDuplicate = async () => {
         :similarity-score="validationResult?.similarityScore"
         :threshold="validationResult?.threshold"
         :similar-phrase="validationResult?.similarPhrase"
+        :model-id="currentModel"
         :show-actions="false"
       />
 
@@ -114,6 +128,7 @@ const onConfirmDuplicate = async () => {
         :similarity-score="validationResult?.similarityScore"
         :threshold="validationResult?.threshold"
         :similar-phrase="validationResult?.similarPhrase"
+        :model-id="currentModel"
         :is-loading="isLoading"
         :show-actions="true"
         @confirm="onConfirmDuplicate"
@@ -141,7 +156,7 @@ const onConfirmDuplicate = async () => {
           <button
             type="button"
             :disabled="!canSubmit"
-            @click="validatePhrase"
+            @click="onValidate"
             :class="[
               'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer',
               !canSubmit && (uiState !== 'VALIDATING' || showValidationSkeleton)

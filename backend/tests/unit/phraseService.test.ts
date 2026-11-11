@@ -102,7 +102,7 @@ describe('PhraseService Unit Tests', () => {
 
     it('should reuse cached vector when available without calling provider', async () => {
       const dummyVec = new Array(384).fill(0.2);
-      cache.set('frase en cache', dummyVec);
+      cache.set(`${mockProvider.modelIdentifier}:frase en cache`, dummyVec);
 
       const providerSpy = vi.spyOn(mockProvider, 'generateEmbedding');
 
@@ -230,6 +230,64 @@ describe('PhraseService Unit Tests', () => {
       expect(created.validationStatus).toBe('UNIQUE');
       expect(created.similarityScore).toBeNull();
       expect(created.similarToId).toBeNull();
+    });
+  });
+
+  describe('multi-model dynamic resolution', () => {
+    it('should validate using the specified model provider when passed', async () => {
+      const cfMock = new MockEmbeddingProvider({
+        dimension: 1024,
+        modelIdentifier: '@cf/baai/bge-m3',
+      });
+      const providers = new Map([
+        [mockProvider.modelIdentifier, mockProvider],
+        ['@cf/baai/bge-m3', cfMock],
+      ]);
+
+      const multiModelService = new PhraseService({
+        embeddingProvider: mockProvider,
+        providers,
+        phraseRepository: mockRepository,
+      });
+
+      const cfSpy = vi.spyOn(cfMock, 'generateEmbedding');
+      const hfSpy = vi.spyOn(mockProvider, 'generateEmbedding');
+
+      await multiModelService.validatePhrase('Una oración de prueba', '@cf/baai/bge-m3');
+
+      expect(cfSpy).toHaveBeenCalledWith('Una oración de prueba');
+      expect(hfSpy).not.toHaveBeenCalled();
+    });
+
+    it('should create phrase with the specified model in embeddingModel', async () => {
+      const cfMock = new MockEmbeddingProvider({
+        dimension: 1024,
+        modelIdentifier: '@cf/baai/bge-m3',
+      });
+      const providers = new Map([
+        [mockProvider.modelIdentifier, mockProvider],
+        ['@cf/baai/bge-m3', cfMock],
+      ]);
+
+      const multiModelService = new PhraseService({
+        embeddingProvider: mockProvider,
+        providers,
+        phraseRepository: mockRepository,
+      });
+
+      await multiModelService.createPhrase('Frase con Cloudflare BGE-M3', false, '@cf/baai/bge-m3');
+
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          embeddingModel: '@cf/baai/bge-m3',
+        })
+      );
+    });
+
+    it('should throw ExternalAIProviderError when requested model is unconfigured', async () => {
+      await expect(
+        phraseService.validatePhrase('Test phrase', 'unconfigured-model')
+      ).rejects.toThrow();
     });
   });
 

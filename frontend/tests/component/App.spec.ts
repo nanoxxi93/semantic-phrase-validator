@@ -8,6 +8,12 @@ import PhraseForm from '../../src/components/PhraseForm.vue';
 describe('App component integration', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(phraseService, 'getActiveModel').mockResolvedValue({
+      provider: 'cloudflare',
+      modelIdentifier: '@cf/baai/bge-m3',
+      dimension: 1024,
+      threshold: 0.8,
+    });
   });
 
   it('calls phraseService.checkHealth silently on mount and renders header, form and catalog', async () => {

@@ -29,9 +29,9 @@ El proyecto se organiza como un monorepo cohesionado que aloja `/backend` y `/fr
 | **Servidor HTTP** | Express.js + TypeScript | Minimalismo, robustez probada, ecosistema maduro y control total sobre middlewares y ciclo de vida de peticiones. |
 | **Validación de Datos** | Zod | Esquemas tipados seguros tanto para runtime (body parsing) como para compilación estática de TypeScript. |
 | **Capa de Persistencia** | PostgreSQL + Drizzle ORM | Schema-as-code con TypeScript nativo, migraciones SQL reproducibles con `drizzle-kit`, alta velocidad sin sobrecostes de abstracción pesada. |
-| **Almacenamiento Vectorial** | Columna `JSONB` en PostgreSQL | Almacena el vector de 384 dimensiones de coma flotante sin requerir extensiones complejas en la fase inicial, permitiendo portabilidad entre proveedores estándar. |
-| **Proveedor de IA** | SDK `@huggingface/inference` | Inferencia Serverless gestionada para Feature Extraction con el modelo `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. |
-| **Inversión de Dependencias** | Interfaz `EmbeddingProvider` | Desacopla la lógica de negocio del SDK de Hugging Face, facilitando pruebas con mocks deterministas sin costo de red. |
+| **Almacenamiento Vectorial** | Columna `JSONB` en PostgreSQL con discriminador `embedding_model` | Almacena el vector numérico de coma flotante (384d en Hugging Face o 1024d en Cloudflare Workers AI) sin requerir extensiones complejas en la fase inicial, aislando el catálogo por modelo. |
+| **Proveedores de IA** | Hugging Face (`MiniLM-L12-v2`, 384d) y Cloudflare Workers AI (`@cf/baai/bge-m3`, 1024d) | Inferencia gestionada con soporte para capa gratuita de Cloudflare (10,000 neuronas/día) y selección dinámica por variable de entorno (`EMBEDDING_PROVIDER`). |
+| **Inversión de Dependencias** | Interfaz `EmbeddingProvider` | Desacopla la lógica de negocio de los SDKs/APIs externas, facilitando pruebas con mocks deterministas sin costo de red. |
 | **Framework Frontend** | Vue 3 + `<script setup>` | Reactividad declarativa de alto rendimiento, código conciso y desacoplamiento limpio mediante composables. |
 | **Estilizado UI** | Tailwind CSS | Clases utilitarias que aceleran la construcción de interfaces elegantes y consistentes sin hojas de estilo monolíticas. |
 | **Testing** | Vitest | Ejecución ultrarrápida compatible con módulos ESM, ideal tanto para pruebas unitarias de matemáticas vectoriales como para integración con supertest. |

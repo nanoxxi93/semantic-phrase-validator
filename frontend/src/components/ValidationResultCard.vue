@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { SimilarPhraseSummary } from '../types/phrase.js';
+import { getModelMeta } from '../constants/models.js';
 
 const props = withDefaults(
   defineProps<{
     similarityScore?: number | null;
     threshold?: number;
     similarPhrase?: SimilarPhraseSummary | null;
+    modelId?: string;
   }>(),
   {
     similarityScore: null,
     threshold: 0.8,
     similarPhrase: null,
+    modelId: undefined,
   }
 );
 
@@ -22,6 +25,11 @@ const scoreFormatted = computed(() => {
 
 const thresholdPercentage = computed(() => {
   return `${(props.threshold * 100).toFixed(0)}%`;
+});
+
+const modelBadge = computed(() => {
+  if (!props.modelId) return null;
+  return getModelMeta(props.modelId).shortLabel;
 });
 
 const closestPhraseText = computed(() => {
@@ -40,6 +48,12 @@ const closestPhraseText = computed(() => {
       <div class="flex-1 min-w-0">
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-sm font-semibold text-emerald-950">Frase semánticamente única</h3>
+          <span
+            v-if="modelBadge"
+            class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-emerald-100 text-emerald-800 border border-emerald-300"
+          >
+            {{ modelBadge }}
+          </span>
           <span
             v-if="scoreFormatted"
             class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-semibold bg-emerald-200/70 text-emerald-900"
